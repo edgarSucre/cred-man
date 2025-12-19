@@ -1,0 +1,32 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "internal/db/queries"
+    schema: "internal/db/migrations"
+    gen:
+      go:
+        package: "repository"
+        out: "internal/db/repository"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        overrides:
+          - db_type: "uuid"
+            nullable: false
+            go_type:
+              import: "github.com/google/uuid"
+              type: "UUID"
+          - db_type: "pg_catalog.timestamp"
+            nullable: true
+            go_type: "time.Time"
+          - db_type: "pg_catalog.varchar"
+            nullable: true
+            go_type: "string"
+          - db_type: "date"
+            nullable: true
+            go_type: "time.Time"
+          - db_type: "pg_catalog.numeric"
+            nullable: false
+            go_type:
+              import: "github.com/shopspring/decimal"
+              type: "Decimal"
+          
