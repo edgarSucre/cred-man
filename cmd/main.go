@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/edgarSucre/crm/internal/config"
-	"github.com/edgarSucre/crm/internal/db/repository"
 	"github.com/edgarSucre/crm/internal/decorators"
-	chttp "github.com/edgarSucre/crm/internal/http"
+	"github.com/edgarSucre/crm/internal/infrastructure/db/repository"
+	chttp "github.com/edgarSucre/crm/internal/infrastructure/http"
 )
 
 func run(ctx context.Context, logger *slog.Logger) error {
@@ -37,7 +37,13 @@ func run(ctx context.Context, logger *slog.Logger) error {
 		return err
 	}
 
+	bankService, err := decorators.NewBankServiceWithDecorators(repo, logger)
+	if err != nil {
+		return err
+	}
+
 	srv, err := chttp.NewServer(cfg, chttp.ServerParams{
+		BankService:   bankService,
 		ClientService: clientService,
 		Logger:        logger,
 	})

@@ -4,21 +4,21 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/edgarSucre/crm/internal/client"
-	"github.com/edgarSucre/crm/internal/db/repository"
-	"github.com/edgarSucre/crm/pkg"
+	"github.com/edgarSucre/crm/internal/infrastructure/db/repository"
+	"github.com/edgarSucre/crm/internal/usecases/client"
+	"github.com/edgarSucre/crm/pkg/domain"
 	"github.com/google/uuid"
 )
 
 type clientLoggerDecorator struct {
-	svc    pkg.ClientService
+	svc    domain.ClientService
 	logger *slog.Logger
 }
 
 func (cl *clientLoggerDecorator) CreateClient(
 	ctx context.Context,
-	params pkg.CreateClientParams,
-) (*pkg.Client, error) {
+	params domain.CreateClientParams,
+) (*domain.Client, error) {
 	args := []any{
 		slog.String("action", "create-client"),
 	}
@@ -37,15 +37,16 @@ func (cl *clientLoggerDecorator) CreateClient(
 	return resp, err
 }
 
-func (cl *clientLoggerDecorator) GetClient(ctx context.Context, id uuid.UUID) (*pkg.Client, error) {
+func (cl *clientLoggerDecorator) GetClient(ctx context.Context, id uuid.UUID) (*domain.Client, error) {
 	return cl.svc.GetClient(ctx, id)
 }
 
 func NewClientServiceWithDecorators(
 	repo repository.Querier,
 	logger *slog.Logger,
-) (pkg.ClientService, error) {
+) (domain.ClientService, error) {
 	svc, err := client.NewService(repo)
+
 	if err != nil {
 		return nil, err
 	}
