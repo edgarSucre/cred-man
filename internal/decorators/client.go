@@ -24,7 +24,7 @@ func (cl *clientLoggerDecorator) CreateClient(
 	}
 
 	logger := cl.logger.With(args...)
-	logger.Info("starting..")
+	logger.Info("starting", slog.Any("payload", params))
 
 	resp, err := cl.svc.CreateClient(ctx, params)
 

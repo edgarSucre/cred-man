@@ -13,6 +13,7 @@ import (
 type ServerParams struct {
 	BankService   domain.BankService
 	ClientService domain.ClientService
+	CreditService domain.CreditService
 	Logger        *slog.Logger
 }
 

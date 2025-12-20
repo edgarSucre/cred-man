@@ -15,14 +15,45 @@ import (
 	"github.com/edgarSucre/crm/internal/config"
 	"github.com/edgarSucre/crm/internal/decorators"
 	"github.com/edgarSucre/crm/internal/infrastructure/db/repository"
+	"github.com/edgarSucre/crm/internal/infrastructure/events"
 	chttp "github.com/edgarSucre/crm/internal/infrastructure/http"
+	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 )
+
+func loadConfig() (config.Config, error) {
+	_ = godotenv.Load()
+
+	env := map[string]string{
+		"GOOSE_DBSTRING": "",
+		"HTTP_HOST":      "",
+		"HTTP_PORT":      "",
+		"REDIS_ADDR":     "",
+	}
+
+	for key := range env {
+		val := os.Getenv(key)
+
+		if len(val) == 0 {
+			return config.Config{}, config.ErrLoadConfig(key)
+		}
+
+		env[key] = val
+	}
+
+	return config.Config{
+		DbConn:    env["GOOSE_DBSTRING"],
+		Host:      env["HTTP_HOST"],
+		HttpPort:  env["HTTP_PORT"],
+		RedisAddr: env["REDIS_ADDR"],
+	}, nil
+}
 
 func run(ctx context.Context, logger *slog.Logger) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	cfg, err := config.LoadConfig()
+	cfg, err := loadConfig()
 	if err != nil {
 		return err
 	}
@@ -32,6 +63,12 @@ func run(ctx context.Context, logger *slog.Logger) error {
 		return err
 	}
 
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     cfg.RedisAddr,
+		Password: "",
+		DB:       0,
+	})
+
 	clientService, err := decorators.NewClientServiceWithDecorators(repo, logger)
 	if err != nil {
 		return err
@@ -40,11 +77,20 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	bankService, err := decorators.NewBankServiceWithDecorators(repo, logger)
 	if err != nil {
 		return err
+
 	}
+
+	eventBus, err := events.NewStreamBus(redisClient, "domain-events")
+	if err != nil {
+		return err
+	}
+
+	creditService, err := decorators.NewCreditServiceWithDecorators(repo, eventBus, logger)
 
 	srv, err := chttp.NewServer(cfg, chttp.ServerParams{
 		BankService:   bankService,
 		ClientService: clientService,
+		CreditService: creditService,
 		Logger:        logger,
 	})
 	if err != nil {
@@ -99,7 +145,7 @@ func main() {
 	logLevel := new(slog.LevelVar)
 	opts := &slog.HandlerOptions{Level: logLevel}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
-	logger = logger.With(slog.String("micro-service", "credit-management"))
+	logger = logger.With(slog.String("api", "credit-management"))
 
 	if err := run(ctx, logger); err != nil {
 		logger.Error(err.Error())

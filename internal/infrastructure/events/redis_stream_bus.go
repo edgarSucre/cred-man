@@ -3,8 +3,10 @@ package events
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/edgarSucre/crm/pkg/events"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -22,8 +24,10 @@ func (b *RedisStreamBus) Publish(ctx context.Context, event events.Event) error 
 	return b.client.XAdd(ctx, &redis.XAddArgs{
 		Stream: b.stream,
 		Values: map[string]interface{}{
-			"name": event.EventName(),
-			"data": payload,
+			"id":          uuid.New().String(),
+			"name":        event.EventName(),
+			"data":        payload,
+			"occurred_at": time.Now(),
 		},
 	}).Err()
 }

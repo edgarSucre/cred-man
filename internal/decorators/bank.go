@@ -23,7 +23,7 @@ func (bl *bankLoggerDecorator) CreateBank(
 	}
 
 	logger := bl.logger.With(args...)
-	logger.Info("starting..")
+	logger.Info("starting", slog.Any("payload", params))
 
 	resp, err := bl.svc.CreateBank(ctx, params)
 

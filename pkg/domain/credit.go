@@ -46,10 +46,26 @@ type (
 		ClientID uuid.UUID
 		CreditID uuid.UUID
 	}
+
+	CreditApproved struct {
+		CreditID uuid.UUID
+	}
+
+	CreditRejected struct {
+		CreditID uuid.UUID
+	}
 )
 
 func (CreditCreated) EventName() string {
 	return "credit.created"
+}
+
+func (CreditApproved) EventName() string {
+	return "credit.approved"
+}
+
+func (CreditRejected) EventName() string {
+	return "credit.rejected"
 }
 
 type CreateCreditParams struct {
@@ -59,8 +75,6 @@ type CreateCreditParams struct {
 }
 
 var (
-	// ErrInvalidBankID     = terror.Validation.New("invalid-bank-id", "bank_id is not a valid uuid")
-	// ErrInvalidClientID   = terror.Validation.New("invalid-client-id", "client_id is not a valid uuid")
 	ErrCreditTypeInvalid = terror.Validation.New(
 		"invalid-credit-type",
 		"credit_type must one of 'auto', 'mortgage', 'commercial'",
@@ -68,14 +82,6 @@ var (
 )
 
 func (params CreateCreditParams) Validate() error {
-	// if uuid.Validate(params.BankID) != nil {
-	// 	return ErrInvalidBankID
-	// }
-
-	// if uuid.Validate(params.ClientID) != nil {
-	// 	return ErrInvalidClientID
-	// }
-
 	if !params.CreditType.isValid() {
 		return ErrCreditTypeInvalid
 	}
@@ -85,5 +91,10 @@ func (params CreateCreditParams) Validate() error {
 
 type CreditService interface {
 	CreateCredit(context.Context, CreateCreditParams) error
+	GetCredit(context.Context, uuid.UUID) (*Credit, error)
 	ProcessCredit(context.Context, CreditCreated) error
+
+	// these are just for logging, not implemented
+	ProcessApproval(context.Context, CreditApproved) error
+	ProcessRejection(context.Context, CreditRejected) error
 }

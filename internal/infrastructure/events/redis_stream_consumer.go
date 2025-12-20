@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -11,9 +12,11 @@ import (
 type (
 	StreamConsumer struct {
 		client   *redis.Client
-		group    string
 		consumer string
+		group    string
 		handlers map[string]EventHandler
+		jobs     chan redis.XMessage
+		stream   string
 	}
 
 	EventEnvelope struct {
@@ -29,24 +32,65 @@ type (
 	}
 )
 
-const streamName = "domain-events"
-
-func (c *StreamConsumer) Start(ctx context.Context) {
+// simple workers implementation
+func (c *StreamConsumer) worker(ctx context.Context) {
 	for {
-		streams, err := c.client.XReadGroup(ctx, &redis.XReadGroupArgs{
-			Group:    c.group,
-			Consumer: c.consumer,
-			Streams:  []string{streamName, ">"},
-			Block:    time.Second,
-			Count:    10,
-		}).Result()
-
-		if err != nil {
-			continue
-		}
-
-		for _, msg := range streams[0].Messages {
+		select {
+		case <-ctx.Done():
+			return
+		case msg, ok := <-c.jobs:
+			if !ok {
+				return // channel closed
+			}
 			c.processMessage(ctx, msg)
+		}
+	}
+}
+
+func (c *StreamConsumer) Start(ctx context.Context) error {
+	// start workers
+	var wg sync.WaitGroup
+
+	for range 10 {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			c.worker(ctx)
+		}()
+	}
+
+	for {
+
+		select {
+		case <-ctx.Done():
+			// stop accepting new work
+			close(c.jobs)
+
+			// wait for workers to finish
+			wg.Wait()
+			return nil
+		default:
+			streams, err := c.client.XReadGroup(ctx, &redis.XReadGroupArgs{
+				Group:    c.group,
+				Consumer: c.consumer,
+				Streams:  []string{c.stream, ">"},
+				Block:    time.Second,
+				Count:    20,
+			}).Result()
+
+			if err != nil {
+				continue
+			}
+
+			for _, msg := range streams[0].Messages {
+				// implicit backpressure when there are no workers available
+				select {
+				case c.jobs <- msg:
+				case <-ctx.Done():
+					break
+				}
+			}
 		}
 	}
 }
@@ -58,26 +102,26 @@ func (c *StreamConsumer) processMessage(
 	var envelope EventEnvelope
 	raw, ok := msg.Values["data"].(string)
 	if !ok {
-		// malformed message → ACK to avoid poison loop
+		// malformed message, ACK to remove it from stream
 		c.ack(ctx, msg)
 		return
 	}
 
 	if err := json.Unmarshal([]byte(raw), &envelope); err != nil {
-		// invalid JSON → ACK or move to DLQ
+		// invalid JSON, nothing to do here, ACK to remove it from stream
 		c.ack(ctx, msg)
 		return
 	}
 
 	handler, ok := c.handlers[envelope.Name]
 	if !ok {
-		// unknown event → ack & ignore
+		// unknown event, ACK to remove it from stream
 		c.ack(ctx, msg)
 		return
 	}
 
 	if err := handler.Handle(ctx, envelope.Payload); err != nil {
-		// do NOT ack → retry later
+		// handler error, try again
 		return
 	}
 
@@ -87,7 +131,7 @@ func (c *StreamConsumer) processMessage(
 func (c *StreamConsumer) ack(ctx context.Context, msg redis.XMessage) {
 	_ = c.client.XAck(
 		ctx,
-		streamName,
+		c.stream,
 		c.group,
 		msg.ID,
 	).Err()
