@@ -5,6 +5,7 @@ import (
 
 	"github.com/edgarSucre/crm/internal/infrastructure/http/bank"
 	"github.com/edgarSucre/crm/internal/infrastructure/http/client"
+	"github.com/edgarSucre/crm/internal/infrastructure/http/credit"
 	"github.com/edgarSucre/crm/pkg/domain"
 )
 
@@ -12,10 +13,12 @@ func addRoutes(
 	mux *http.ServeMux,
 	bankService domain.BankService,
 	clientService domain.ClientService,
+	creditService domain.CreditService,
 ) {
-	// mux.Handle("GET /clients/:id", client.HandleGetClient(clientService))
 	mux.Handle("POST /clients", client.HandleCreateClient(clientService))
 	mux.Handle("POST /banks", bank.HandleCreateBank(bankService))
+	mux.Handle("GET /credits/{id}", credit.HandleGetCredit(creditService))
+	mux.Handle("POST /credits", credit.HandleCreateCredit(creditService))
 
 	mux.HandleFunc("GET /health", handleHealth)
 }

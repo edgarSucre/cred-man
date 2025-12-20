@@ -12,6 +12,7 @@ import (
 	"github.com/edgarSucre/crm/internal/handlers"
 	"github.com/edgarSucre/crm/internal/infrastructure/db/repository"
 	"github.com/edgarSucre/crm/internal/infrastructure/events"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 )
@@ -53,10 +54,14 @@ func run(ctx context.Context, logger *slog.Logger) error {
 
 	logger = logger.With(slog.String("consumer", cfg.Consumer))
 
-	repo, err := repository.NewRepository(ctx, cfg.DbConn)
+	pool, err := pgxpool.New(ctx, cfg.DbConn)
 	if err != nil {
 		return err
 	}
+
+	defer pool.Close()
+
+	repo := repository.New(pool)
 
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     cfg.RedisAddr,

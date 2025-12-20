@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func (q *Queries) WithTransaction(ctx context.Context, fn func(tx *Queries) error) error {
-	db := q.db.(*pgx.Conn)
+	pool := q.db.(*pgxpool.Pool)
 
-	transaction, err := db.Begin(ctx)
+	transaction, err := pool.Begin(ctx)
+
 	defer transaction.Rollback(ctx)
 
 	if err != nil {
@@ -21,5 +22,5 @@ func (q *Queries) WithTransaction(ctx context.Context, fn func(tx *Queries) erro
 		return fmt.Errorf("repository.Tx error: %w", err)
 	}
 
-	return nil
+	return transaction.Commit(ctx)
 }

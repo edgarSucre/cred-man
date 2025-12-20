@@ -122,6 +122,7 @@ func NewCreditServiceWithDecorators(
 	logger = logger.With("service", "credit")
 
 	return &creditLoggerDecorator{
-		svc: svc,
+		svc:    svc,
+		logger: logger,
 	}, nil
 }

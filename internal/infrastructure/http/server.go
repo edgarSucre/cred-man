@@ -23,7 +23,7 @@ func NewServer(cfg config.Config, params ServerParams) (http.Handler, error) {
 	}
 
 	mux := http.NewServeMux()
-	addRoutes(mux, params.BankService, params.ClientService)
+	addRoutes(mux, params.BankService, params.ClientService, params.CreditService)
 
 	var handler http.Handler = mux
 

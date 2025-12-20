@@ -39,7 +39,8 @@ func (svc *Service) createTx(
 		go func() {
 			defer wg.Done()
 
-			_, err := q.GetBank(ctx, model.BankID)
+			// using parent repo
+			_, err := svc.repo.GetBank(ctx, model.BankID)
 			if err != nil {
 				failureCh <- err
 			}
@@ -49,7 +50,8 @@ func (svc *Service) createTx(
 		go func() {
 			defer wg.Done()
 
-			_, err := q.GetClient(ctx, model.ClientID)
+			// using parent repo
+			_, err := svc.repo.GetClient(ctx, model.ClientID)
 			if err != nil {
 				failureCh <- err
 			}
@@ -59,9 +61,10 @@ func (svc *Service) createTx(
 		if len(failureCh) > 0 {
 			err := <-failureCh
 
-			return fmt.Errorf("crate credit transaction error: %w", err)
+			return fmt.Errorf("create credit transaction error: %w", err)
 		}
 
+		// using tx Repo
 		credit, err := q.CreateCredit(ctx, model)
 		if err != nil {
 			return fmt.Errorf("repo.CreateCredit error: %w", err)
