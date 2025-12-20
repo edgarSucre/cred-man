@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS clients (
     email VARCHAR NOT NULL,
     birthdate DATE,
     country VARCHAR,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TYPE bank_type AS ENUM ('private', 'government');
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS credit (
     max_payment NUMERIC(19,4) NOT NULL,
     term_months SMALLINT NOT NULL,
     credit_type credit_type NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     status credit_status NOT NULL,
     CONSTRAINT FK_client_id FOREIGN KEY (client_id) REFERENCES clients(id),
     CONSTRAINT FK_bank_id FOREIGN KEY (bank_id) REFERENCES banks(id)

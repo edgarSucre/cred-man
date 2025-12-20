@@ -23,8 +23,8 @@ INSERT INTO clients (
 type CreateClientParams struct {
 	FullName  string
 	Email     string
-	Birthdate time.Time
-	Country   string
+	Birthdate *time.Time
+	Country   *string
 }
 
 func (q *Queries) CreateClient(ctx context.Context, arg CreateClientParams) (Client, error) {

@@ -3,12 +3,12 @@ package client
 import (
 	"net/http"
 
-	"github.com/edgarSucre/crm/internal/client"
-	"github.com/edgarSucre/crm/internal/http/utils"
+	"github.com/edgarSucre/crm/internal/http/httputils"
+	"github.com/edgarSucre/crm/pkg"
 	"github.com/google/uuid"
 )
 
-func HandleGetClient(svc *client.Service) http.Handler {
+func HandleGetClient(svc pkg.ClientService) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) error {
 		clientId := r.PathValue("id")
 
@@ -22,8 +22,8 @@ func HandleGetClient(svc *client.Service) http.Handler {
 		resp := new(CreateClientResponse)
 		resp.FromDomain(cl)
 
-		return utils.Marshal(w, resp)
+		return httputils.Marshal(w, resp)
 	}
 
-	return utils.ErrorHandlerFunc(fn)
+	return httputils.ErrorHandlerFunc(fn)
 }

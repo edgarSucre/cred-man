@@ -14,8 +14,5 @@ func (svc Service) GetClient(ctx context.Context, id uuid.UUID) (*pkg.Client, er
 		return nil, fmt.Errorf("svc.GetClient: %w", err)
 	}
 
-	resp := new(pkg.Client)
-	resp.FromModel(cl)
-
-	return resp, nil
+	return cl.ToDomain(), nil
 }

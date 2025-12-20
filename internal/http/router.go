@@ -3,11 +3,11 @@ package http
 import (
 	"net/http"
 
-	clientSvc "github.com/edgarSucre/crm/internal/client"
 	"github.com/edgarSucre/crm/internal/http/client"
+	"github.com/edgarSucre/crm/pkg"
 )
 
-func addRoutes(mux *http.ServeMux, clientService *clientSvc.Service) {
+func addRoutes(mux *http.ServeMux, clientService pkg.ClientService) {
 	mux.Handle("GET /clients/:id", client.HandleGetClient(clientService))
 	mux.Handle("POST /clients", client.HandleCreateClient(clientService))
 	mux.HandleFunc("GET /health", handleHealth)

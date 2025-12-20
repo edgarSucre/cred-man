@@ -151,8 +151,8 @@ type Client struct {
 	ID        uuid.UUID
 	FullName  string
 	Email     string
-	Birthdate time.Time
-	Country   string
+	Birthdate *time.Time
+	Country   *string
 	CreatedAt time.Time
 }
 

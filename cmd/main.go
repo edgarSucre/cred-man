@@ -9,60 +9,95 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
+	"time"
 
-	"github.com/edgarSucre/crm/internal/client"
 	"github.com/edgarSucre/crm/internal/config"
 	"github.com/edgarSucre/crm/internal/db/repository"
+	"github.com/edgarSucre/crm/internal/decorators"
 	chttp "github.com/edgarSucre/crm/internal/http"
 )
 
-func run(ctx context.Context) error {
+func run(ctx context.Context, logger *slog.Logger) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return err
 	}
-
-	logLevel := new(slog.LevelVar)
-	opts := &slog.HandlerOptions{Level: logLevel}
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 
 	repo, err := repository.NewRepository(ctx, cfg.DbConn)
 	if err != nil {
-		return fmt.Errorf("failed to connect to the database: %w", err)
+		return err
 	}
 
-	clientService, err := client.NewService(repo)
+	clientService, err := decorators.NewClientServiceWithDecorators(repo, logger)
 	if err != nil {
-		return fmt.Errorf("failed to create client-service: %w", err)
+		return err
 	}
 
-	srv := chttp.NewServer(cfg, logger, clientService)
+	srv, err := chttp.NewServer(cfg, chttp.ServerParams{
+		ClientService: clientService,
+		Logger:        logger,
+	})
+	if err != nil {
+		return err
+	}
+
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort(cfg.Host, cfg.HttpPort),
 		Handler: srv,
+		BaseContext: func(l net.Listener) context.Context {
+			return ctx
+		},
 	}
 
 	go func() {
+		logger.Info(fmt.Sprintf("http server listening on: %v", cfg.HttpPort))
+
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
+			logger.Error(fmt.Sprintf("error listening and serving: %s\n", err))
 			cancel()
 
 			return
 		}
 
-		fmt.Fprintln(os.Stdout, " server shutting down..")
+		logger.Info("server shutting down..")
 	}()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+
+		shutdownCtx := context.Background()
+		shutdownCtx, cancel := context.WithTimeout(shutdownCtx, 10*time.Second)
+		defer cancel()
+
+		if err := httpServer.Shutdown(shutdownCtx); err != nil {
+			logger.Error(fmt.Sprintf("error shutting down http server: %s", err))
+		}
+	}()
+
+	wg.Wait()
 
 	return nil
 }
 
 func main() {
 	ctx := context.Background()
-	if err := run(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+
+	logLevel := new(slog.LevelVar)
+	opts := &slog.HandlerOptions{Level: logLevel}
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	logger = logger.With(slog.String("micro-service", "credit-management"))
+
+	if err := run(ctx, logger); err != nil {
+		logger.Error(err.Error())
+
 		os.Exit(1)
 	}
 }

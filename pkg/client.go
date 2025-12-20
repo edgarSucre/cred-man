@@ -1,50 +1,48 @@
 package pkg
 
 import (
+	"context"
+	"strings"
 	"time"
 
-	"github.com/edgarSucre/crm/internal/db/repository"
+	"github.com/edgarSucre/crm/pkg/terror"
 	"github.com/google/uuid"
 )
 
 type Client struct {
 	ID        uuid.UUID
-	BirthDate time.Time
+	Birthdate time.Time
 	Country   string
 	Email     string
 	FullName  string
 	CreatedAt time.Time
 }
 
-func (cl *Client) FromModel(rClient repository.Client) {
-	cl.BirthDate = rClient.Birthdate
-	cl.Country = rClient.Country
-	cl.CreatedAt = rClient.CreatedAt
-	cl.Email = rClient.Email
-	cl.FullName = rClient.FullName
-	cl.ID = rClient.ID
-}
-
 type CreateClientParams struct {
-	BirthDate time.Time
-	Country   string
+	Birthdate *time.Time
+	Country   *string
 	Email     string
 	FullName  string
 }
 
-func (params CreateClientParams) ToModel() repository.CreateClientParams {
-	return repository.CreateClientParams{
-		Birthdate: params.BirthDate,
-		Country:   params.Country,
-		Email:     params.Email,
-		FullName:  params.FullName,
-	}
-}
+var (
+	ErrFullNameRequired = terror.Validation.New("invalid-name", "client full_name is required")
+	ErrEmailRequired    = terror.Validation.New("invalid-email", "client email is required")
+)
 
 func (params CreateClientParams) Validate() error {
-	//TODO handle error here
+	if len(strings.TrimSpace(params.FullName)) == 0 {
+		return ErrFullNameRequired
+	}
+
+	if len(strings.TrimSpace(params.Email)) == 0 {
+		return ErrEmailRequired
+	}
+
 	return nil
 }
 
 type ClientService interface {
+	CreateClient(context.Context, CreateClientParams) (*Client, error)
+	GetClient(context.Context, uuid.UUID) (*Client, error)
 }

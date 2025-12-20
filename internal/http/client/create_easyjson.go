@@ -4,7 +4,7 @@ package client
 
 import (
 	json "encoding/json"
-
+	httputils "github.com/edgarSucre/crm/internal/http/httputils"
 	easyjson "github.com/mailru/easyjson"
 	jlexer "github.com/mailru/easyjson/jlexer"
 	jwriter "github.com/mailru/easyjson/jwriter"
@@ -32,7 +32,7 @@ func easyjson267ce010DecodeGithubComEdgarSucreCrmInternalHttpClient(in *jlexer.L
 		key := in.UnsafeFieldName(false)
 		in.WantColon()
 		switch key {
-		case "birth_date":
+		case "birthdate":
 			if in.IsNull() {
 				in.Skip()
 			} else {
@@ -60,7 +60,7 @@ func easyjson267ce010DecodeGithubComEdgarSucreCrmInternalHttpClient(in *jlexer.L
 			} else {
 				out.Email = string(in.String())
 			}
-		case "ful_name":
+		case "full_name":
 			if in.IsNull() {
 				in.Skip()
 			} else {
@@ -89,7 +89,7 @@ func easyjson267ce010EncodeGithubComEdgarSucreCrmInternalHttpClient(out *jwriter
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"birth_date\":"
+		const prefix string = ",\"birthdate\":"
 		out.RawString(prefix[1:])
 		out.Raw((in.BirthDate).MarshalJSON())
 	}
@@ -109,7 +109,7 @@ func easyjson267ce010EncodeGithubComEdgarSucreCrmInternalHttpClient(out *jwriter
 		out.String(string(in.Email))
 	}
 	{
-		const prefix string = ",\"ful_name\":"
+		const prefix string = ",\"full_name\":"
 		out.RawString(prefix)
 		out.String(string(in.FullName))
 	}
@@ -158,19 +158,35 @@ func easyjson267ce010DecodeGithubComEdgarSucreCrmInternalHttpClient1(in *jlexer.
 		key := in.UnsafeFieldName(false)
 		in.WantColon()
 		switch key {
-		case "birth_date":
+		case "birthdate":
 			if in.IsNull() {
 				in.Skip()
+				out.BirthDate = nil
 			} else {
-				if data := in.Raw(); in.Ok() {
-					in.AddError((out.BirthDate).UnmarshalJSON(data))
+				if out.BirthDate == nil {
+					out.BirthDate = new(httputils.Date)
+				}
+				if in.IsNull() {
+					in.Skip()
+				} else {
+					if data := in.Raw(); in.Ok() {
+						in.AddError((*out.BirthDate).UnmarshalJSON(data))
+					}
 				}
 			}
 		case "country":
 			if in.IsNull() {
 				in.Skip()
+				out.Country = nil
 			} else {
-				out.Country = string(in.String())
+				if out.Country == nil {
+					out.Country = new(string)
+				}
+				if in.IsNull() {
+					in.Skip()
+				} else {
+					*out.Country = string(in.String())
+				}
 			}
 		case "email":
 			if in.IsNull() {
@@ -205,14 +221,22 @@ func easyjson267ce010EncodeGithubComEdgarSucreCrmInternalHttpClient1(out *jwrite
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"birth_date\":"
+		const prefix string = ",\"birthdate\":"
 		out.RawString(prefix[1:])
-		out.Raw((in.BirthDate).MarshalJSON())
+		if in.BirthDate == nil {
+			out.RawString("null")
+		} else {
+			out.Raw((*in.BirthDate).MarshalJSON())
+		}
 	}
 	{
 		const prefix string = ",\"country\":"
 		out.RawString(prefix)
-		out.String(string(in.Country))
+		if in.Country == nil {
+			out.RawString("null")
+		} else {
+			out.String(string(*in.Country))
+		}
 	}
 	{
 		const prefix string = ",\"email\":"

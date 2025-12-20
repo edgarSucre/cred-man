@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/edgarSucre/crm/pkg/terror"
 	"github.com/joho/godotenv"
 )
 
@@ -26,7 +27,7 @@ func LoadConfig() (Config, error) {
 		val := os.Getenv(key)
 
 		if len(val) == 0 {
-			return Config{}, fmt.Errorf("failed to load environment variable %s", key)
+			return Config{}, errLoadConfig(key)
 		}
 
 		env[key] = val
@@ -37,4 +38,11 @@ func LoadConfig() (Config, error) {
 		Host:     env["HTTP_HOST"],
 		HttpPort: env["HTTP_PORT"],
 	}, nil
+}
+
+func errLoadConfig(key string) error {
+	return terror.Internal.New(
+		"bad-config",
+		fmt.Sprintf("failed to load environment variable %s", key),
+	)
 }

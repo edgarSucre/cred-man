@@ -5,17 +5,16 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/edgarSucre/crm/internal/client"
-	"github.com/edgarSucre/crm/internal/http/utils"
+	"github.com/edgarSucre/crm/internal/http/httputils"
 	"github.com/edgarSucre/crm/pkg"
 	"github.com/google/uuid"
 )
 
-func HandleCreateClient(svc *client.Service) http.Handler {
+func HandleCreateClient(svc pkg.ClientService) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) error {
 		var req CreateClientRequest
 
-		if err := utils.Unmarshal(r.Body, &req); err != nil {
+		if err := httputils.Unmarshal(r.Body, &req); err != nil {
 			return err
 		}
 
@@ -27,18 +26,20 @@ func HandleCreateClient(svc *client.Service) http.Handler {
 		resp := new(CreateClientResponse)
 		resp.FromDomain(newClient)
 
-		return utils.Marshal(w, resp)
+		w.WriteHeader(http.StatusCreated)
+
+		return httputils.Marshal(w, resp)
 	}
 
-	return utils.ErrorHandlerFunc(fn)
+	return httputils.ErrorHandlerFunc(fn)
 }
 
 type CreateClientRequest struct {
-	BirthDate time.Time `json:"birth_date"`
-	Country   string    `json:"country"`
-	Email     string    `json:"email"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
+	BirthDate *httputils.Date `json:"birthdate"`
+	Country   *string         `json:"country"`
+	Email     string          `json:"email"`
+	FirstName string          `json:"first_name"`
+	LastName  string          `json:"last_name"`
 }
 
 func (req CreateClientRequest) FullName() string {
@@ -46,8 +47,13 @@ func (req CreateClientRequest) FullName() string {
 }
 
 func (req CreateClientRequest) ToParams() pkg.CreateClientParams {
+	var date *time.Time
+	if req.BirthDate != nil {
+		date = &req.BirthDate.Time
+	}
+
 	return pkg.CreateClientParams{
-		BirthDate: req.BirthDate,
+		Birthdate: date,
 		Country:   req.Country,
 		Email:     req.Email,
 		FullName:  req.FullName(),
@@ -55,16 +61,16 @@ func (req CreateClientRequest) ToParams() pkg.CreateClientParams {
 }
 
 type CreateClientResponse struct {
-	BirthDate time.Time `json:"birth_date"`
+	BirthDate time.Time `json:"birthdate"`
 	Country   string    `json:"country"`
 	CreatedAt time.Time `json:"created_at"`
 	Email     string    `json:"email"`
-	FullName  string    `json:"ful_name"`
+	FullName  string    `json:"full_name"`
 	ID        uuid.UUID `json:"id"`
 }
 
 func (resp *CreateClientResponse) FromDomain(dto *pkg.Client) {
-	resp.BirthDate = dto.BirthDate
+	resp.BirthDate = dto.Birthdate
 	resp.Country = dto.Country
 	resp.CreatedAt = dto.CreatedAt
 	resp.Email = dto.Email

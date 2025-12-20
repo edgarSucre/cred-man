@@ -6,5 +6,5 @@ WHERE id = $1;
 INSERT INTO clients (
     full_name, email, birthdate, country
 ) VALUES (
-    $1, $2, $3, $4
+    @full_name, @email, sqlc.narg('birthdate'), sqlc.narg('country')
 ) RETURNING *;
