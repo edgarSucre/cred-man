@@ -74,7 +74,7 @@ type CreditResponse struct {
 	TermMonths int    `json:"term_months"`
 }
 
-func (resp CreditResponse) FromResult(creditResult credits.CreditResult) {
+func (resp *CreditResponse) FromResult(creditResult credits.CreditResult) {
 	resp.BankID = creditResult.BankID
 	resp.ClientID = creditResult.ClientID
 	resp.CreatedAt = creditResult.CreatedAt.Format(time.DateOnly)

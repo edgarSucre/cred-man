@@ -20,10 +20,10 @@ type (
 	}
 
 	EventEnvelope struct {
-		ID         string          `json:"id"`
-		Name       string          `json:"name"`
-		Payload    json.RawMessage `json:"payload"`
-		OccurredAt time.Time       `json:"occurred_at"`
+		ID         string    `json:"id"`
+		Name       string    `json:"name"`
+		Payload    string    `json:"data"`
+		OccurredAt time.Time `json:"occurred_at"`
 	}
 
 	EventHandler interface {
@@ -100,14 +100,23 @@ func (c *StreamConsumer) processMessage(
 	msg redis.XMessage,
 ) {
 	var envelope EventEnvelope
-	raw, ok := msg.Values["data"].(string)
-	if !ok {
+
+	raw, err := json.Marshal(msg.Values)
+	if err != nil {
 		// malformed message, ACK to remove it from stream
 		c.ack(ctx, msg)
 		return
 	}
 
-	if err := json.Unmarshal([]byte(raw), &envelope); err != nil {
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		// invalid JSON, nothing to do here, ACK to remove it from stream
+		c.ack(ctx, msg)
+		return
+	}
+
+	var payload json.RawMessage
+
+	if err := json.Unmarshal([]byte(envelope.Payload), &payload); err != nil {
 		// invalid JSON, nothing to do here, ACK to remove it from stream
 		c.ack(ctx, msg)
 		return
@@ -120,7 +129,7 @@ func (c *StreamConsumer) processMessage(
 		return
 	}
 
-	if err := handler.Handle(ctx, envelope.Payload); err != nil {
+	if err := handler.Handle(ctx, payload); err != nil {
 		// handler error, try again
 		return
 	}

@@ -27,9 +27,9 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	/* ========================================================================== */
-	/*                                    infra                                   */
-	/* ========================================================================== */
+	/* ========================================================================================== */
+	/*                                       infrastructure                                       */
+	/* ========================================================================================== */
 
 	env := map[string]string{
 		"GOOSE_DBSTRING": "",
@@ -66,9 +66,9 @@ func run(ctx context.Context, logger *slog.Logger) error {
 		return err
 	}
 
-	/* ========================================================================== */
-	/*                                  use case                                  */
-	/* ========================================================================== */
+	/* ========================================================================================== */
+	/*                                          use case                                          */
+	/* ========================================================================================== */
 
 	createBank := banks.NewCreateBankService(bankRepository)
 	createBank = banks.NewCreateBankLoggerDecorator(createBank, logger)
@@ -90,9 +90,6 @@ func run(ctx context.Context, logger *slog.Logger) error {
 
 	getCredit := credits.NewGetCreditService(creditRepository)
 	getCredit = credits.NewGetCreditLoggerDecorator(getCredit, logger)
-
-	// processCredit := credits.NewProcessCreditService(eventBus, creditRepository, transactionManager)
-	// processCredit = credits.NewProcessCreditLoggerDecorator(processCredit, logger)
 
 	/* ========================================================================================== */
 	/*                                        HTTP Handlers                                       */

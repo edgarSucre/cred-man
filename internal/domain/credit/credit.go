@@ -25,9 +25,6 @@ type NewCreditOpts struct {
 	BankID     bank.ID
 	ClientID   client.ID
 	CreditType CreditType
-	MaxPayment decimal.Decimal
-	MinPayment decimal.Decimal
-	TermMonths int
 }
 
 func (opts NewCreditOpts) validate() error {
@@ -43,22 +40,6 @@ func (opts NewCreditOpts) validate() error {
 		return fmt.Errorf("NewCreditOpts.validate > %w", ErrInvalidCreditType)
 	}
 
-	if opts.MaxPayment.IsZero() {
-		return fmt.Errorf("NewCreditOpts.validate > %w", ErrInvalidMaxPayment)
-	}
-
-	if opts.MinPayment.IsZero() {
-		return fmt.Errorf("NewCreditOpts.validate > %w", ErrInvalidMinPayment)
-	}
-
-	if opts.MinPayment.GreaterThan(opts.MaxPayment) {
-		return fmt.Errorf("NewCreditOpts.validate > %w", ErrInvalidPayment)
-	}
-
-	if opts.TermMonths <= 0 {
-		return ErrInvalidTerm
-	}
-
 	return nil
 }
 
@@ -71,11 +52,44 @@ func New(opts NewCreditOpts) (Credit, error) {
 		bankID:     opts.BankID,
 		clientID:   opts.ClientID,
 		creditType: opts.CreditType,
-		maxPayment: opts.MaxPayment,
-		minPayment: opts.MinPayment,
+		maxPayment: maxPaymentFromCreditType(opts.CreditType),
+		minPayment: minPaymentFromCreditType(opts.CreditType),
 		status:     CreditStatusPending,
-		termMonths: opts.TermMonths,
+		termMonths: termMonthsFromCreditType(opts.CreditType),
 	}, nil
+}
+
+func maxPaymentFromCreditType(ct CreditType) decimal.Decimal {
+	switch ct {
+	case CreditTypeAuto:
+		return decimal.NewFromInt(5000)
+	case CreditTypeCommercial:
+		return decimal.NewFromInt(100000)
+	default:
+		return decimal.NewFromInt(20000)
+	}
+}
+
+func minPaymentFromCreditType(ct CreditType) decimal.Decimal {
+	switch ct {
+	case CreditTypeAuto:
+		return decimal.NewFromInt(500)
+	case CreditTypeCommercial:
+		return decimal.NewFromInt(10000)
+	default:
+		return decimal.NewFromInt(2000)
+	}
+}
+
+func termMonthsFromCreditType(ct CreditType) int {
+	switch ct {
+	case CreditTypeAuto:
+		return 8 * 12
+	case CreditTypeCommercial:
+		return 10 * 12
+	default:
+		return 30 * 12
+	}
 }
 
 type RehydrateOpts struct {

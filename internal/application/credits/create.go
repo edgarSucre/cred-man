@@ -9,7 +9,7 @@ import (
 	"github.com/edgarSucre/crm/internal/domain/bank"
 	"github.com/edgarSucre/crm/internal/domain/client"
 	"github.com/edgarSucre/crm/internal/domain/credit"
-	"github.com/shopspring/decimal"
+	"github.com/edgarSucre/crm/internal/domain/event"
 )
 
 type createCredit struct {
@@ -64,6 +64,10 @@ func (svc createCredit) Execute(
 		return nil
 	})
 
+	if err != nil {
+		return CreditResult{}, fmt.Errorf("txManager.WithTransaction > %w", err)
+	}
+
 	return CreditResult{
 		BankID:     createdCredit.BankID().String(),
 		ClientID:   createdCredit.ClientID().String(),
@@ -81,9 +85,6 @@ type CreateCreditCommand struct {
 	BankID     string
 	ClientID   string
 	CreditType string
-	MaxPayment float64
-	MinPayment float64
-	TermMonths int
 }
 
 func (cmd CreateCreditCommand) validate() error {
@@ -97,18 +98,6 @@ func (cmd CreateCreditCommand) validate() error {
 
 	if len(cmd.CreditType) == 0 {
 		return fmt.Errorf("CreateCreditCommand.validate > %w", ErrNoCreditType)
-	}
-
-	if cmd.MaxPayment <= 0 {
-		return fmt.Errorf("CreateCreditCommand.validate > %w", ErrInvalidMaxPayment)
-	}
-
-	if cmd.MinPayment <= 0 {
-		return fmt.Errorf("CreateCreditCommand.validate > %w", ErrInvalidMinPayment)
-	}
-
-	if cmd.TermMonths <= 0 {
-		return fmt.Errorf("CreateCreditCommand.validate > %w", ErrInvalidTerm)
 	}
 
 	return nil
@@ -130,16 +119,10 @@ func newCreditOpts(cmd CreateCreditCommand) (credit.NewCreditOpts, error) {
 		return credit.NewCreditOpts{}, fmt.Errorf("CreateCredit > %w", err)
 	}
 
-	maxPayment := decimal.NewFromFloat(cmd.MaxPayment)
-	minPayment := decimal.NewFromFloat(cmd.MinPayment)
-
 	return credit.NewCreditOpts{
 		BankID:     bankId,
 		ClientID:   clientID,
 		CreditType: creditType,
-		MaxPayment: maxPayment,
-		MinPayment: minPayment,
-		TermMonths: cmd.TermMonths,
 	}, nil
 }
 
@@ -148,8 +131,8 @@ func (svc createCredit) getBankAndClient(
 	clientID client.ID,
 	bankID bank.ID,
 ) (bank.Bank, client.Client, error) {
-	clientCh := make(chan client.Client)
-	bankCh := make(chan bank.Bank)
+	clientCh := make(chan client.Client, 2)
+	bankCh := make(chan bank.Bank, 2)
 	errCh := make(chan error, 2)
 
 	var wg sync.WaitGroup
@@ -199,7 +182,13 @@ func (svc createCredit) createCreditAndPublishEvent(
 		return credit.Credit{}, fmt.Errorf("creditRepo.CreateCredit > %w", err)
 	}
 
-	if err := svc.eventBus.Publish(ctx, credit.CreditCreated{ID: c.ID().String()}); err != nil {
+	creditCreated := event.CreditCreated{
+		BankID:   c.BankID().String(),
+		ClientID: c.ClientID().String(),
+		CreditID: c.ID().String(),
+	}
+
+	if err := svc.eventBus.Publish(ctx, creditCreated); err != nil {
 		return credit.Credit{}, fmt.Errorf("eventBus.Publish > %w", err)
 	}
 
