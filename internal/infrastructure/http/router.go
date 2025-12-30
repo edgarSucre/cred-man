@@ -2,23 +2,18 @@ package http
 
 import (
 	"net/http"
-
-	"github.com/edgarSucre/crm/internal/infrastructure/http/bank"
-	"github.com/edgarSucre/crm/internal/infrastructure/http/client"
-	"github.com/edgarSucre/crm/internal/infrastructure/http/credit"
-	"github.com/edgarSucre/crm/pkg/domain"
 )
 
 func addRoutes(
 	mux *http.ServeMux,
-	bankService domain.BankService,
-	clientService domain.ClientService,
-	creditService domain.CreditService,
+	bankHandler BankHandler,
+	clientHandler ClientHandler,
+	creditHandler CreditHandler,
 ) {
-	mux.Handle("POST /clients", client.HandleCreateClient(clientService))
-	mux.Handle("POST /banks", bank.HandleCreateBank(bankService))
-	mux.Handle("GET /credits/{id}", credit.HandleGetCredit(creditService))
-	mux.Handle("POST /credits", credit.HandleCreateCredit(creditService))
+	mux.Handle("POST /clients", HandleCreateClient(clientHandler.createClient))
+	mux.Handle("POST /banks", HandleCreateBank(bankHandler.createBank))
+	mux.Handle("GET /credits/{id}", HandleGetCredit(creditHandler.getCredit))
+	mux.Handle("POST /credits", HandleCreateCredit(creditHandler.createCredit))
 
 	mux.HandleFunc("GET /health", handleHealth)
 }

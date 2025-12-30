@@ -18,7 +18,7 @@ type Querier interface {
 	GetClient(ctx context.Context, id uuid.UUID) (Client, error)
 	GetClientCredits(ctx context.Context, clientID uuid.UUID) ([]Credit, error)
 	GetCredit(ctx context.Context, id uuid.UUID) (Credit, error)
-	UpdateCreditStatus(ctx context.Context, status CreditStatus) error
+	UpdateCreditStatus(ctx context.Context, arg UpdateCreditStatusParams) error
 }
 
 var _ Querier = (*Queries)(nil)

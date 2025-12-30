@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/edgarSucre/crm/pkg/events"
+	"github.com/edgarSucre/crm/internal/domain/event"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
@@ -15,7 +15,7 @@ type RedisStreamBus struct {
 	stream string
 }
 
-func (b *RedisStreamBus) Publish(ctx context.Context, event events.Event) error {
+func (b *RedisStreamBus) Publish(ctx context.Context, event event.Event) error {
 	payload, err := json.Marshal(event)
 	if err != nil {
 		return err

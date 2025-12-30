@@ -21,6 +21,7 @@ const (
 	Internal
 	NotFound
 	Validation
+	Rejection
 )
 
 func (t ErrorType) New(code, detail string) Error {
@@ -32,7 +33,7 @@ func (t ErrorType) New(code, detail string) Error {
 }
 
 func (e Error) Error() string {
-	return fmt.Sprintf("code: %s, detail: %s", e.Code, e.Detail)
+	return fmt.Sprintf(`{"code": "%s", "detail": "%s"}`, e.Code, e.Detail)
 }
 
 func (e Error) HttpStatus() int {
@@ -43,17 +44,15 @@ func (e Error) HttpStatus() int {
 		return http.StatusNotFound
 	case Validation:
 		return http.StatusBadRequest
+	case Rejection:
+		return http.StatusForbidden
 	default:
 		return http.StatusInternalServerError
 	}
 }
 
 func (e Error) Raw() []byte {
-	template := `{"code": "%s", "detail": "%s"}`
-
-	msg := fmt.Sprintf(template, e.Code, e.Detail)
-
-	return []byte(msg)
+	return []byte(e.Error())
 }
 
 func Unwrap(err error) error {
@@ -67,4 +66,14 @@ func Unwrap(err error) error {
 
 		return err
 	}
+}
+
+func ToInternal(e error) error {
+	ue := Unwrap(e)
+
+	if err, ok := ue.(Error); ok {
+		return Internal.New(err.Code, err.Detail)
+	}
+
+	return Internal.New("internal-error", e.Error())
 }

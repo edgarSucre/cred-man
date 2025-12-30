@@ -2,25 +2,37 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func (q *Queries) WithTransaction(ctx context.Context, fn func(tx *Queries) error) error {
-	pool := q.db.(*pgxpool.Pool)
+type transactionManager struct {
+	pool *pgxpool.Pool
+}
 
-	transaction, err := pool.Begin(ctx)
+func NewTransactionManager(pool *pgxpool.Pool) transactionManager {
+	return transactionManager{pool}
+}
 
-	defer transaction.Rollback(ctx)
+type txKey struct{}
 
+func (tm transactionManager) WithTransaction(
+	ctx context.Context,
+	fn func(ctx context.Context) error,
+) error {
+	tx, err := tm.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to start transaction: %w", err)
+		return err
 	}
 
-	if err := fn(q.WithTx(transaction)); err != nil {
-		return fmt.Errorf("repository.Tx error: %w", err)
+	defer tx.Rollback(ctx)
+
+	ctx = context.WithValue(ctx, txKey{}, tx)
+
+	if err := fn(ctx); err != nil {
+		return err
 	}
 
-	return transaction.Commit(ctx)
+	return tx.Commit(ctx)
 }

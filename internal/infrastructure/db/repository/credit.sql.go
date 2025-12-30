@@ -111,10 +111,15 @@ func (q *Queries) GetCredit(ctx context.Context, id uuid.UUID) (Credit, error) {
 }
 
 const updateCreditStatus = `-- name: UpdateCreditStatus :exec
-UPDATE credit SET status = $1
+UPDATE credit SET status = $1 WHERE id = $2
 `
 
-func (q *Queries) UpdateCreditStatus(ctx context.Context, status CreditStatus) error {
-	_, err := q.db.Exec(ctx, updateCreditStatus, status)
+type UpdateCreditStatusParams struct {
+	Status CreditStatus
+	ID     uuid.UUID
+}
+
+func (q *Queries) UpdateCreditStatus(ctx context.Context, arg UpdateCreditStatusParams) error {
+	_, err := q.db.Exec(ctx, updateCreditStatus, arg.Status, arg.ID)
 	return err
 }

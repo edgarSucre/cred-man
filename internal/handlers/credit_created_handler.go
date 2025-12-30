@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/edgarSucre/crm/pkg/domain"
+	"github.com/edgarSucre/crm/internal/application/credits"
+	"github.com/edgarSucre/crm/internal/domain/event"
 )
 
 type CreditCreatedHandler struct {
-	creditSvc domain.CreditService
+	svc credits.ProcessCreditService
 }
 
 func (h *CreditCreatedHandler) EventName() string {
@@ -19,10 +20,13 @@ func (h *CreditCreatedHandler) Handle(
 	ctx context.Context,
 	payload json.RawMessage,
 ) error {
-	var event domain.CreditCreated
+	var event event.CreditCreated
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return err
 	}
 
-	return h.creditSvc.ProcessCredit(ctx, event)
+	return h.svc.Execute(ctx, credits.ProcessCreditCommand{
+		ClientID: event.ClientID,
+		CreditID: event.CreditID,
+	})
 }

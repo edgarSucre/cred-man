@@ -7,18 +7,22 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/edgarSucre/crm/internal/config"
-	"github.com/edgarSucre/crm/internal/decorators"
+	"github.com/edgarSucre/crm/internal/application/credits"
 	"github.com/edgarSucre/crm/internal/handlers"
+	"github.com/edgarSucre/crm/internal/infrastructure/config"
 	"github.com/edgarSucre/crm/internal/infrastructure/db/repository"
 	"github.com/edgarSucre/crm/internal/infrastructure/events"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 )
 
-func loadConfig() (config.Config, error) {
-	_ = godotenv.Load()
+func run(ctx context.Context, logger *slog.Logger) error {
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+
+	/* ========================================================================================== */
+	/*                                       infrastructure                                       */
+	/* ========================================================================================== */
 
 	env := map[string]string{
 		"GOOSE_DBSTRING": "",
@@ -26,28 +30,7 @@ func loadConfig() (config.Config, error) {
 		"CONSUMER":       "",
 	}
 
-	for key := range env {
-		val := os.Getenv(key)
-
-		if len(val) == 0 {
-			return config.Config{}, config.ErrLoadConfig(key)
-		}
-
-		env[key] = val
-	}
-
-	return config.Config{
-		DbConn:    env["GOOSE_DBSTRING"],
-		RedisAddr: env["REDIS_ADDR"],
-		Consumer:  env["CONSUMER"],
-	}, nil
-}
-
-func run(ctx context.Context, logger *slog.Logger) error {
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
-	defer cancel()
-
-	cfg, err := loadConfig()
+	cfg, err := config.LoadConfig(env)
 	if err != nil {
 		return err
 	}
@@ -61,7 +44,8 @@ func run(ctx context.Context, logger *slog.Logger) error {
 
 	defer pool.Close()
 
-	repo := repository.New(pool)
+	creditRepository := repository.NewCreditRepository(pool)
+	transactionManager := repository.NewTransactionManager(pool)
 
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     cfg.RedisAddr,
@@ -74,15 +58,20 @@ func run(ctx context.Context, logger *slog.Logger) error {
 		return err
 	}
 
-	creditService, err := decorators.NewCreditServiceWithDecorators(repo, eventBus, logger)
-	if err != nil {
-		return err
-	}
+	/* ========================================================================================== */
+	/*                                          use case                                          */
+	/* ========================================================================================== */
+	approveCredit := credits.NewApproveCreditLoggerDecorator(logger)
+	rejectCredit := credits.NewRejectCreditLoggerDecorator(logger)
 
-	creditHandlers, err := handlers.GetCreditHandlers(creditService)
-	if err != nil {
-		return err
-	}
+	processCredit := credits.NewProcessCreditService(eventBus, creditRepository, transactionManager)
+	processCredit = credits.NewProcessCreditLoggerDecorator(processCredit, logger)
+
+	/* ========================================================================================== */
+	/*                                    domain event handlers                                   */
+	/* ========================================================================================== */
+
+	creditHandlers := handlers.GetCreditHandlers(approveCredit, processCredit, rejectCredit)
 
 	handlers := make(map[string]events.EventHandler, 3)
 
@@ -101,6 +90,10 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+
+	/* ========================================================================================== */
+	/*                                    start event consumer                                    */
+	/* ========================================================================================== */
 
 	logger.Info("stream consumer is listening")
 

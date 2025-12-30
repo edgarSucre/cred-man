@@ -12,18 +12,24 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgarSucre/crm/internal/config"
-	"github.com/edgarSucre/crm/internal/decorators"
+	"github.com/edgarSucre/crm/internal/application/banks"
+	"github.com/edgarSucre/crm/internal/application/clients"
+	"github.com/edgarSucre/crm/internal/application/credits"
+	"github.com/edgarSucre/crm/internal/infrastructure/config"
 	"github.com/edgarSucre/crm/internal/infrastructure/db/repository"
 	"github.com/edgarSucre/crm/internal/infrastructure/events"
 	chttp "github.com/edgarSucre/crm/internal/infrastructure/http"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 )
 
-func loadConfig() (config.Config, error) {
-	_ = godotenv.Load()
+func run(ctx context.Context, logger *slog.Logger) error {
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+
+	/* ========================================================================== */
+	/*                                    infra                                   */
+	/* ========================================================================== */
 
 	env := map[string]string{
 		"GOOSE_DBSTRING": "",
@@ -32,29 +38,7 @@ func loadConfig() (config.Config, error) {
 		"REDIS_ADDR":     "",
 	}
 
-	for key := range env {
-		val := os.Getenv(key)
-
-		if len(val) == 0 {
-			return config.Config{}, config.ErrLoadConfig(key)
-		}
-
-		env[key] = val
-	}
-
-	return config.Config{
-		DbConn:    env["GOOSE_DBSTRING"],
-		Host:      env["HTTP_HOST"],
-		HttpPort:  env["HTTP_PORT"],
-		RedisAddr: env["REDIS_ADDR"],
-	}, nil
-}
-
-func run(ctx context.Context, logger *slog.Logger) error {
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
-	defer cancel()
-
-	cfg, err := loadConfig()
+	cfg, err := config.LoadConfig(env)
 	if err != nil {
 		return err
 	}
@@ -66,7 +50,10 @@ func run(ctx context.Context, logger *slog.Logger) error {
 
 	defer pool.Close()
 
-	repo := repository.New(pool)
+	bankRepository := repository.NewBankRepository(pool)
+	clientRepository := repository.NewClientRepository(pool)
+	creditRepository := repository.NewCreditRepository(pool)
+	transactionManager := repository.NewTransactionManager(pool)
 
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     cfg.RedisAddr,
@@ -74,33 +61,54 @@ func run(ctx context.Context, logger *slog.Logger) error {
 		DB:       0,
 	})
 
-	clientService, err := decorators.NewClientServiceWithDecorators(repo, logger)
-	if err != nil {
-		return err
-	}
-
-	bankService, err := decorators.NewBankServiceWithDecorators(repo, logger)
-	if err != nil {
-		return err
-
-	}
-
 	eventBus, err := events.NewStreamBus(redisClient, "domain-events")
 	if err != nil {
 		return err
 	}
 
-	creditService, err := decorators.NewCreditServiceWithDecorators(repo, eventBus, logger)
+	/* ========================================================================== */
+	/*                                  use case                                  */
+	/* ========================================================================== */
 
-	srv, err := chttp.NewServer(cfg, chttp.ServerParams{
-		BankService:   bankService,
-		ClientService: clientService,
-		CreditService: creditService,
-		Logger:        logger,
-	})
-	if err != nil {
-		return err
-	}
+	createBank := banks.NewCreateBankService(bankRepository)
+	createBank = banks.NewCreateBankLoggerDecorator(createBank, logger)
+
+	createClient := clients.NewCreateClientService(clientRepository)
+	createClient = clients.NewCreateClientLoggerDecorator(createClient, logger)
+
+	getClient := clients.NewGetClientService(clientRepository)
+	getClient = clients.NewGetClientLoggerDecorator(getClient, logger)
+
+	createCredit := credits.NewCreateCreditService(
+		bankRepository,
+		clientRepository,
+		creditRepository,
+		eventBus,
+		transactionManager,
+	)
+	createCredit = credits.NewCreateCreditLoggerDecorator(createCredit, logger)
+
+	getCredit := credits.NewGetCreditService(creditRepository)
+	getCredit = credits.NewGetCreditLoggerDecorator(getCredit, logger)
+
+	// processCredit := credits.NewProcessCreditService(eventBus, creditRepository, transactionManager)
+	// processCredit = credits.NewProcessCreditLoggerDecorator(processCredit, logger)
+
+	/* ========================================================================================== */
+	/*                                        HTTP Handlers                                       */
+	/* ========================================================================================== */
+
+	clientHandler := chttp.NewClientHandler(createClient, getClient)
+	bankHandler := chttp.NewBankHandler(createBank)
+	creditHandler := chttp.NewCreditHandler(createCredit, getCredit)
+
+	srv := chttp.NewServer(
+		cfg,
+		bankHandler,
+		clientHandler,
+		creditHandler,
+		logger,
+	)
 
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort(cfg.Host, cfg.HttpPort),
@@ -109,6 +117,10 @@ func run(ctx context.Context, logger *slog.Logger) error {
 			return ctx
 		},
 	}
+
+	/* ========================================================================================== */
+	/*                                      start HTTP server                                     */
+	/* ========================================================================================== */
 
 	go func() {
 		logger.Info(fmt.Sprintf("http server listening on: %v", cfg.HttpPort))
@@ -122,6 +134,10 @@ func run(ctx context.Context, logger *slog.Logger) error {
 
 		logger.Info("server shutting down..")
 	}()
+
+	/* ========================================================================================== */
+	/*                                          shutdown                                          */
+	/* ========================================================================================== */
 
 	var wg sync.WaitGroup
 	wg.Add(1)
