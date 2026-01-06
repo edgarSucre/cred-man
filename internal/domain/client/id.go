@@ -1,19 +1,25 @@
 package client
 
-import "github.com/google/uuid"
+import (
+	"github.com/edgarSucre/mye"
+	"github.com/google/uuid"
+)
 
 type ID struct {
 	value uuid.UUID
 }
 
 func NewID(s string) (ID, error) {
+	err := mye.New(mye.CodeInvalid, "client_id_creation_failed", "validation failed").
+		WithUserMsg("client_id validation failed")
+
 	if len(s) == 0 {
-		return ID{}, ErrInvalidClientID
+		return ID{}, err.WithField("client_id", "client can't be empty")
 	}
 
-	id, err := uuid.Parse(s)
-	if err != nil {
-		return ID{}, ErrInvalidClientID
+	id, uuIDErr := uuid.Parse(s)
+	if uuIDErr != nil {
+		return ID{}, err.WithField("client_id", "client_id most be valid uuid v4")
 	}
 
 	return ID{value: id}, nil

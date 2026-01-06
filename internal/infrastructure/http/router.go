@@ -6,9 +6,9 @@ import (
 
 func addRoutes(
 	mux *http.ServeMux,
-	bankHandler BankHandler,
-	clientHandler ClientHandler,
-	creditHandler CreditHandler,
+	bankHandler *BankHandler,
+	clientHandler *ClientHandler,
+	creditHandler *CreditHandler,
 ) {
 	mux.Handle("POST /clients", HandleCreateClient(clientHandler.createClient))
 	mux.Handle("POST /banks", HandleCreateBank(bankHandler.createBank))

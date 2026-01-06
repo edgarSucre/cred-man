@@ -1,25 +1,27 @@
 package events
 
 import (
-	"github.com/edgarSucre/crm/pkg/terror"
+	"github.com/edgarSucre/mye"
 	"github.com/redis/go-redis/v9"
 )
 
-var (
-	ErrNoRedisClient   = terror.Internal.New("redis-stream-bad-config", "redis client is missing")
-	ErrInvalidStream   = terror.Internal.New("redis-stream-bad-config", "stream can't be empty")
-	ErrInvalidGroup    = terror.Internal.New("redis-stream-bad-config", "consumer group can't be empty")
-	ErrInvalidConsumer = terror.Internal.New("redis-stream-bad-config", "consumer can't be empty")
-	ErrInvalidHandler  = terror.Internal.New("redis-stream-bad-config", "handlers can't be empty")
-)
-
 func NewStreamBus(redisClient *redis.Client, stream string) (*RedisStreamBus, error) {
+	err := mye.New(
+		mye.CodeInternal,
+		"stream_subscriber_config_error",
+		"streamBus creation failed",
+	)
+
 	if redisClient == nil {
-		return nil, ErrNoRedisClient
+		err.WithField("redisClient", "redisClient is missing")
 	}
 
 	if len(stream) == 0 {
-		return nil, ErrInvalidStream
+		err.WithField("stream", "stream name can't be empty")
+	}
+
+	if err.HasFields() {
+		return nil, err
 	}
 
 	return &RedisStreamBus{client: redisClient, stream: stream}, nil
@@ -34,24 +36,30 @@ type ConsumerParams struct {
 }
 
 func (params ConsumerParams) Validate() error {
+	err := mye.New(mye.CodeInternal, "redis_consumer_creation_failed", "parameter validation error")
+
 	if params.Client == nil {
-		return ErrNoRedisClient
+		err.WithField("client", "redis client is missing")
 	}
 
 	if len(params.Group) == 0 {
-		return ErrInvalidGroup
+		err.WithField("group", "consumer group can't be empty")
 	}
 
 	if len(params.Consumer) == 0 {
-		return ErrInvalidConsumer
+		err.WithField("consumer", "consumer can't be empty")
 	}
 
 	if len(params.Stream) == 0 {
-		return ErrInvalidStream
+		err.WithField("stream", "stream can't be empty")
 	}
 
 	if len(params.Handlers) == 0 {
-		return ErrInvalidHandler
+		err.WithField("handlers", "event handlers can't be empty")
+	}
+
+	if err.HasFields() {
+		return err
 	}
 
 	return nil

@@ -10,6 +10,7 @@ import (
 	"github.com/edgarSucre/crm/internal/domain/client"
 	"github.com/edgarSucre/crm/internal/domain/credit"
 	"github.com/edgarSucre/crm/internal/domain/event"
+	"github.com/edgarSucre/mye"
 )
 
 type createCredit struct {
@@ -26,8 +27,12 @@ func NewCreateCreditService(
 	creditRepo creditRepository,
 	eventBus eventBus,
 	txManager transactionManager,
-) CreateCreditService {
-	return createCredit{bankRepo, clientRepo, creditRepo, eventBus, txManager}
+) (CreateCreditService, error) {
+	if err := validateCreateService(bankRepo, clientRepo, creditRepo, eventBus, txManager); err != nil {
+		return nil, err
+	}
+
+	return createCredit{bankRepo, clientRepo, creditRepo, eventBus, txManager}, nil
 }
 
 func (svc createCredit) Execute(
@@ -88,16 +93,23 @@ type CreateCreditCommand struct {
 }
 
 func (cmd CreateCreditCommand) validate() error {
+	err := mye.New(mye.CodeInvalid, "credit_creation_failed", "validation error").
+		WithUserMsg("credit creation failed due to input validation")
+
 	if len(cmd.BankID) == 0 {
-		return fmt.Errorf("CreateCreditCommand.validate > %w", ErrNoBankID)
+		return err.WithField("bank_id", "bank_id can't be empty")
 	}
 
 	if len(cmd.ClientID) == 0 {
-		return fmt.Errorf("CreateCreditCommand.validate > %w", ErrNoClientID)
+		return err.WithField("client_id", "client_id can't be empty")
 	}
 
 	if len(cmd.CreditType) == 0 {
-		return fmt.Errorf("CreateCreditCommand.validate > %w", ErrNoCreditType)
+		return err.WithField("credit_type", "credit_type can't be empty")
+	}
+
+	if err.HasFields() {
+		return err
 	}
 
 	return nil
@@ -205,4 +217,43 @@ type CreditResult struct {
 	MinPayment string
 	Status     string
 	TermMonths int
+}
+
+const createErrSlug = "createCredit_service_config_error"
+
+func validateCreateService(
+	bankRepo bankRepository,
+	clientRepo clientRepository,
+	creditRepo creditRepository,
+	eventBus eventBus,
+	txManager transactionManager,
+) error {
+	err := mye.New(mye.CodeInternal, "createCredit_service_config_error", "createService parameter validation failed")
+
+	if bankRepo == nil {
+		err.WithField("bankRepo", "bank repository is missing")
+
+	}
+
+	if clientRepo == nil {
+		err.WithField("clientRepo", "client repository is missing")
+	}
+
+	if creditRepo == nil {
+		err.WithField("creditRepo", "credit repository is missing")
+	}
+
+	if eventBus == nil {
+		err.WithField("eventBus", "event bus is missing")
+	}
+
+	if txManager == nil {
+		err.WithField("txManager", "transaction manager is missing")
+	}
+
+	if err.HasFields() {
+		return err
+	}
+
+	return nil
 }

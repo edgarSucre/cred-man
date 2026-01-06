@@ -1,10 +1,9 @@
 package config
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/edgarSucre/crm/pkg/terror"
+	"github.com/edgarSucre/mye"
 )
 
 type Config struct {
@@ -16,14 +15,19 @@ type Config struct {
 }
 
 func LoadConfig(env map[string]string) (Config, error) {
+	err := mye.New(mye.CodeInternal, "system_configuration_failed", "missing environment variables")
 	for key := range env {
 		val := os.Getenv(key)
 
 		if len(val) == 0 {
-			return Config{}, ErrLoadConfig(key)
+			err.WithField(key, "value is missing")
 		}
 
 		env[key] = val
+	}
+
+	if err.HasFields() {
+		return Config{}, err
 	}
 
 	return Config{
@@ -33,11 +37,4 @@ func LoadConfig(env map[string]string) (Config, error) {
 		RedisAddr: env["REDIS_ADDR"],
 		Consumer:  env["CONSUMER"],
 	}, nil
-}
-
-func ErrLoadConfig(key string) error {
-	return terror.Internal.New(
-		"bad-config",
-		fmt.Sprintf("failed to load environment variable %s", key),
-	)
 }

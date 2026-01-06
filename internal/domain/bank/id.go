@@ -1,19 +1,25 @@
 package bank
 
-import "github.com/google/uuid"
+import (
+	"github.com/edgarSucre/mye"
+	"github.com/google/uuid"
+)
 
 type ID struct {
 	value uuid.UUID
 }
 
 func NewID(s string) (ID, error) {
+	err := mye.New(mye.CodeInvalid, "bank_id_error", "failed to create bankID").
+		WithUserMsg("bank id fails validation")
+
 	if len(s) == 0 {
-		return ID{}, ErrInvalidBankID
+		return ID{}, err.WithField("bank_id", "bank_id can't be empty")
 	}
 
-	id, err := uuid.Parse(s)
-	if err != nil {
-		return ID{}, ErrInvalidBankID
+	id, uuidErr := uuid.Parse(s)
+	if uuidErr != nil {
+		return ID{}, err.WithField("bank_id", "bank_id must be a valid uuid v4")
 	}
 
 	return ID{value: id}, nil

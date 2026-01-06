@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/edgarSucre/crm/internal/application/credits"
-	"github.com/edgarSucre/crm/internal/infrastructure/thttp/httputils"
+	"github.com/edgarSucre/crm/internal/infrastructure/http/httputils"
+	"github.com/edgarSucre/mye"
 )
 
 type CreditHandler struct {
@@ -16,8 +17,25 @@ type CreditHandler struct {
 func NewCreditHandler(
 	createCredit credits.CreateCreditService,
 	getCredit credits.GetCreditService,
-) CreditHandler {
-	return CreditHandler{createCredit, getCredit}
+) (CreditHandler, error) {
+	err := mye.New(
+		mye.CodeInternal,
+		"credit_handler_config_error",
+		"credit handler validation error",
+	)
+
+	if createCredit == nil {
+		err.WithField("createCredit", "createCredit service is missing")
+	}
+
+	if getCredit == nil {
+		err.WithField("getCredit", "getCredit service is missing")
+	}
+
+	if err.HasFields() {
+		return CreditHandler{}, nil
+	}
+	return CreditHandler{createCredit, getCredit}, nil
 }
 
 /* ============================================================================================== */
@@ -48,6 +66,7 @@ func HandleCreateCredit(svc credits.CreateCreditService) http.Handler {
 	return httputils.ErrorHandlerFunc(fn)
 }
 
+//easyjson:json
 type CreateCreditRequest struct {
 	BankID     string `json:"bank_id"`
 	ClientID   string `json:"client_id"`
@@ -62,6 +81,7 @@ func (req CreateCreditRequest) ToCommand() credits.CreateCreditCommand {
 	}
 }
 
+//easyjson:json
 type CreditResponse struct {
 	BankID     string `json:"bank_id"`
 	ClientID   string `json:"client_id"`
@@ -109,4 +129,4 @@ func HandleGetCredit(svc credits.GetCreditService) http.Handler {
 	return httputils.ErrorHandlerFunc(fn)
 }
 
-//go:generate easyjson -all -snake_case $GOFILE
+//go:generate easyjson -snake_case $GOFILE

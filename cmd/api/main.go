@@ -70,22 +70,38 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	/*                                          use case                                          */
 	/* ========================================================================================== */
 
-	createBank := banks.NewCreateBankService(bankRepository)
+	createBank, err := banks.NewCreateBankService(bankRepository)
+	if err != nil {
+		return err
+	}
+
 	createBank = banks.NewCreateBankLoggerDecorator(createBank, logger)
 
-	createClient := clients.NewCreateClientService(clientRepository)
+	createClient, err := clients.NewCreateClientService(clientRepository)
+	if err != nil {
+		return err
+	}
+
 	createClient = clients.NewCreateClientLoggerDecorator(createClient, logger)
 
-	getClient := clients.NewGetClientService(clientRepository)
+	getClient, err := clients.NewGetClientService(clientRepository)
+	if err != nil {
+		return err
+	}
+
 	getClient = clients.NewGetClientLoggerDecorator(getClient, logger)
 
-	createCredit := credits.NewCreateCreditService(
+	createCredit, err := credits.NewCreateCreditService(
 		bankRepository,
 		clientRepository,
 		creditRepository,
 		eventBus,
 		transactionManager,
 	)
+	if err != nil {
+		return err
+	}
+
 	createCredit = credits.NewCreateCreditLoggerDecorator(createCredit, logger)
 
 	getCredit := credits.NewGetCreditService(creditRepository)
@@ -95,17 +111,31 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	/*                                        HTTP Handlers                                       */
 	/* ========================================================================================== */
 
-	clientHandler := chttp.NewClientHandler(createClient, getClient)
-	bankHandler := chttp.NewBankHandler(createBank)
-	creditHandler := chttp.NewCreditHandler(createCredit, getCredit)
+	clientHandler, err := chttp.NewClientHandler(createClient, getClient)
+	if err != nil {
+		return err
+	}
 
-	srv := chttp.NewServer(
-		cfg,
-		bankHandler,
-		clientHandler,
-		creditHandler,
+	bankHandler, err := chttp.NewBankHandler(createBank)
+	if err != nil {
+		return err
+	}
+
+	creditHandler, err := chttp.NewCreditHandler(createCredit, getCredit)
+	if err != nil {
+		return err
+	}
+
+	srv, err := chttp.NewServer(
+		&bankHandler,
+		&clientHandler,
+		&creditHandler,
 		logger,
 	)
+
+	if err != nil {
+		return err
+	}
 
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort(cfg.Host, cfg.HttpPort),

@@ -1,25 +1,32 @@
 package client
 
-import "net/mail"
+import (
+	"net/mail"
+
+	"github.com/edgarSucre/mye"
+)
 
 type Email struct {
 	val string
 }
 
 func NewEmail(e string) (Email, error) {
-	var email Email
+	err := mye.New(mye.CodeInvalid, "email_creation_failed", "validation failed").
+		WithUserMsg("email validation failed")
 
 	if len(e) == 0 {
-		return email, ErrInvalidEmail
+		err.WithField("email", "email can't be empty")
 	}
 
-	if _, err := mail.ParseAddress(e); err != nil {
-		return email, ErrInvalidEmail
+	if _, parseErr := mail.ParseAddress(e); parseErr != nil {
+		err.WithField("email", "email must be a valid email address")
 	}
 
-	email.val = e
+	if err.HasFields() {
+		return Email{}, err
+	}
 
-	return email, nil
+	return Email{e}, nil
 }
 
 func (e Email) IsValid() bool {

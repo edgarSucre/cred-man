@@ -7,6 +7,7 @@ import (
 	"github.com/edgarSucre/crm/internal/domain/client"
 	"github.com/edgarSucre/crm/internal/domain/credit"
 	"github.com/edgarSucre/crm/internal/domain/event"
+	"github.com/edgarSucre/mye"
 )
 
 type processCredit struct {
@@ -19,8 +20,12 @@ func NewProcessCreditService(
 	bus eventBus,
 	creditRepo creditRepository,
 	transactionManager transactionManager,
-) ProcessCreditService {
-	return processCredit{bus, creditRepo, transactionManager}
+) (ProcessCreditService, error) {
+	if err := validateProcessService(bus, creditRepo, transactionManager); err != nil {
+		return nil, err
+	}
+
+	return processCredit{bus, creditRepo, transactionManager}, nil
 }
 
 func (svc processCredit) Execute(
@@ -69,12 +74,18 @@ type ProcessCreditCommand struct {
 }
 
 func (cmd ProcessCreditCommand) validate() error {
+	err := mye.New(mye.CodeInvalid, "credit process failed", "validation error")
+
 	if len(cmd.ClientID) == 0 {
-		return fmt.Errorf("ProcessCreditCommand.validate > %w", ErrNoClientID)
+		err.WithField("client_id", "client_id can't be empty")
 	}
 
 	if len(cmd.CreditID) == 0 {
-		return fmt.Errorf("ProcessCreditCommand.validate > %w", ErrNoCreditID)
+		err.WithField("credit_id", "credit_id")
+	}
+
+	if err.HasFields() {
+		return err
 	}
 
 	return nil
@@ -104,6 +115,36 @@ func (svc processCredit) processCreditAndPublishEvent(
 
 	if err := svc.bus.Publish(ctx, creditEvent); err != nil {
 		return fmt.Errorf("eventBux.Publish > %w", err)
+	}
+
+	return nil
+}
+
+func validateProcessService(
+	bus eventBus,
+	creditRepo creditRepository,
+	transactionManager transactionManager,
+) error {
+	err := mye.New(
+		mye.CodeInternal,
+		"processCredit_service_config_error",
+		"processService parameter validation failed",
+	)
+
+	if bus == nil {
+		err.WithField("bus", "event bus is missing")
+	}
+
+	if creditRepo == nil {
+		err.WithField("creditRepo", "credit repository is missing")
+	}
+
+	if transactionManager == nil {
+		err.WithField("transactionManager", "transaction manager is missing")
+	}
+
+	if err.HasFields() {
+		return err
 	}
 
 	return nil

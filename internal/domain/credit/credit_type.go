@@ -1,5 +1,7 @@
 package credit
 
+import "github.com/edgarSucre/mye"
+
 type CreditType struct {
 	value string
 }
@@ -12,8 +14,11 @@ var (
 )
 
 func CreditTypeFromString(s string) (CreditType, error) {
+	err := mye.New(mye.CodeInvalid, "credit_type_creation_failed", "validation failed").
+		WithUserMsg("credit type validation failed")
+
 	if len(s) == 0 {
-		return CreditTypeInvalid, ErrInvalidCreditType
+		return CreditTypeInvalid, err.WithField("credit_type", "credit_type can't be empty")
 	}
 
 	switch s {
@@ -24,7 +29,7 @@ func CreditTypeFromString(s string) (CreditType, error) {
 	case CreditTypeMortgage.value:
 		return CreditTypeMortgage, nil
 	default:
-		return CreditTypeInvalid, ErrInvalidCreditType
+		return CreditTypeInvalid, err.WithField("credit_type", "credit_type is not a valid credit type")
 	}
 }
 

@@ -2,14 +2,12 @@ package repository
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/edgarSucre/crm/internal/domain/bank"
 	"github.com/edgarSucre/crm/internal/domain/client"
 	"github.com/edgarSucre/crm/internal/domain/credit"
-	"github.com/edgarSucre/crm/pkg/terror"
+	"github.com/edgarSucre/mye"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -39,7 +37,21 @@ func (repo *creditRepository) CreateCredit(
 	})
 
 	if err != nil {
-		return credit.Credit{}, fmt.Errorf("creditRepository.CreateCredit > %w", err)
+		code, slug := CodeAndSlug(err)
+
+		if code == mye.CodeInvalid {
+			err = mye.Wrap(err, code, slug, "bank_insert_failed").
+				WithUserMsg("can't create credit, make sure credit values are valid")
+
+			return credit.Credit{}, err
+		}
+
+		if code == mye.CodeTimeout {
+			err = mye.Wrap(err, code, slug, "bank_insert_failed").
+				WithUserMsg("Credit creation is taking a bit too log due to high traffic. Please try again in a few seconds.")
+		}
+
+		return credit.Credit{}, mye.Wrap(err, code, slug, "failed to create credit")
 	}
 
 	newCredit, err := model.ToDomain()
@@ -47,33 +59,68 @@ func (repo *creditRepository) CreateCredit(
 		return credit.Credit{}, fmt.Errorf("creditRepository.CreateCredit > %w", err)
 	}
 
-	return newCredit, nil
+	return newCredit, err
 }
 
 func (m Credit) ToDomain() (credit.Credit, error) {
 	id, err := credit.NewIDFromUUID(m.ID)
 	if err != nil {
-		return credit.Credit{}, fmt.Errorf("creditModel.ToDomain > %w", terror.ToInternal(err))
+		err = mye.Wrap(
+			err,
+			mye.CodeInternal,
+			ErrDataIntegrity,
+			"corrupted ID in the database",
+		).WithAttribute("ID", m.ID).WithAttribute("table", "credits")
+
+		return credit.Credit{}, err
 	}
 
 	bankID, err := bank.NewID(m.BankID.String())
 	if err != nil {
-		return credit.Credit{}, fmt.Errorf("creditModel.ToDomain > %w", terror.ToInternal(err))
+		err = mye.Wrap(
+			err,
+			mye.CodeInternal,
+			ErrDataIntegrity,
+			"corrupted bank ID in the database",
+		).WithAttribute("bank_id", m.BankID).WithAttribute("table", "credits")
+
+		return credit.Credit{}, err
 	}
 
 	clientID, err := client.NewID(m.ClientID.String())
 	if err != nil {
-		return credit.Credit{}, fmt.Errorf("creditModel.ToDomain > %w", terror.ToInternal(err))
+		err = mye.Wrap(
+			err,
+			mye.CodeInternal,
+			ErrDataIntegrity,
+			"corrupted client ID in the database",
+		).WithAttribute("client_id", m.ClientID).WithAttribute("table", "credits")
+
+		return credit.Credit{}, err
 	}
 
 	creditType, err := credit.CreditTypeFromString(string(m.CreditType))
 	if err != nil {
-		return credit.Credit{}, fmt.Errorf("creditModel.ToDomain > %w", terror.ToInternal(err))
+		err = mye.Wrap(
+			err,
+			mye.CodeInternal,
+			ErrDataIntegrity,
+			"corrupted credit_type in the database",
+		).WithAttribute("credit_type", m.CreditType).WithAttribute("table", "credits")
+
+		return credit.Credit{}, err
 	}
 
 	creditStatus, err := credit.CreditStatusFromString(string(m.Status))
 	if err != nil {
-		return credit.Credit{}, fmt.Errorf("creditModel.ToDomain > %w", terror.ToInternal(err))
+		err = mye.Wrap(
+			err,
+			mye.CodeInternal,
+			ErrDataIntegrity,
+			"corrupted credit_status in the database",
+		).WithAttribute("credit_status", m.Status).WithAttribute("table", "credits")
+
+		return credit.Credit{}, err
 	}
 
 	return credit.Rehydrate(credit.RehydrateOpts{
@@ -89,16 +136,23 @@ func (m Credit) ToDomain() (credit.Credit, error) {
 	}), nil
 }
 
-var ErrNoCreditFound = terror.NotFound.New("not-found", "no credit found")
-
 func (repo *creditRepository) GetCredit(ctx context.Context, id credit.ID) (credit.Credit, error) {
 	c, err := repo.q.GetCredit(ctx, id.UUID())
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, sql.ErrNoRows) {
-			err = ErrNoCreditFound
+		code, slug := CodeAndSlug(err)
+
+		if code == mye.CodeNotFound {
+			return credit.Credit{}, mye.Wrap(err, code, slug, "credit not found").
+				WithAttribute("id", id.String()).
+				WithUserMsg("we couldn't find that credit")
 		}
 
-		return credit.Credit{}, fmt.Errorf("creditRepository.GetCredit > %w", err)
+		if code == mye.CodeTimeout {
+			return credit.Credit{}, mye.Wrap(err, code, slug, "getCredit time out").
+				WithUserMsg("The credit search is taking a bit too long due to high traffic. Please try again in a few seconds")
+		}
+
+		return credit.Credit{}, mye.Wrap(err, code, slug, "failed to retrieve credit")
 	}
 
 	domainCredit, err := c.ToDomain()
@@ -116,7 +170,14 @@ func (repo creditRepository) GetAggregate(
 ) (*credit.CreditAggregate, error) {
 	credits, err := repo.q.GetClientCredits(ctx, clientID.UUID())
 	if err != nil {
-		return nil, fmt.Errorf("repo.GetClientCredits > %w", err)
+		code, slug := CodeAndSlug(err)
+
+		if code == mye.CodeTimeout {
+			return nil, mye.Wrap(err, code, slug, "getClientCredits time out").
+				WithUserMsg("The credits search is taking a bit too long due to high traffic. Please try again in a few seconds")
+		}
+
+		return nil, mye.Wrap(err, code, slug, "getClientCredits failure")
 	}
 
 	dCredits, err := creditsToDomain(credits)
@@ -133,7 +194,11 @@ func (repo creditRepository) GetAggregate(
 	}
 
 	if creditToProcess.ID().IsEmpty() {
-		return nil, ErrNoCreditFound
+		return nil, mye.New(
+			mye.CodeNotFound,
+			"credit_to_process_not_found",
+			"can't find the credit to process in the list of client's credits",
+		)
 	}
 
 	return credit.RehydrateAggregate(

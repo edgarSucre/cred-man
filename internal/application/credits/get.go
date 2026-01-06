@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/edgarSucre/crm/internal/domain/credit"
+	"github.com/edgarSucre/mye"
 )
 
 type getCredit struct {
@@ -49,7 +50,9 @@ type GetCreditCommand struct {
 
 func (cmd GetCreditCommand) validate() error {
 	if len(cmd.ID) == 0 {
-		return ErrNoCreditID
+		return mye.New(mye.CodeInternal, "get_credit_failed", "validation error").
+			WithUserMsg("can't get credit, due to input validation").
+			WithField("id", "id can't be empty")
 	}
 
 	return nil

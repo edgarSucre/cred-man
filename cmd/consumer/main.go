@@ -64,7 +64,11 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	approveCredit := credits.NewApproveCreditLoggerDecorator(logger)
 	rejectCredit := credits.NewRejectCreditLoggerDecorator(logger)
 
-	processCredit := credits.NewProcessCreditService(eventBus, creditRepository, transactionManager)
+	processCredit, err := credits.NewProcessCreditService(eventBus, creditRepository, transactionManager)
+	if err != nil {
+		return err
+	}
+
 	processCredit = credits.NewProcessCreditLoggerDecorator(processCredit, logger)
 
 	/* ========================================================================================== */

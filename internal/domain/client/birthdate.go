@@ -1,6 +1,10 @@
 package client
 
-import "time"
+import (
+	"time"
+
+	"github.com/edgarSucre/mye"
+)
 
 type Birthdate struct {
 	val *time.Time
@@ -11,12 +15,19 @@ func NewBirthdate(t *time.Time) (Birthdate, error) {
 		return Birthdate{}, nil
 	}
 
+	err := mye.New(mye.CodeInvalid, "birthdate_creation_failed", "validation failed").
+		WithUserMsg("birthdate validation failed")
+
 	if t.IsZero() {
-		return Birthdate{}, ErrInvalidBirthdate
+		err.WithField("birthdate", "birthdate must be a valid date")
 	}
 
 	if t.After(time.Now()) {
-		return Birthdate{}, ErrInvalidBirthdate
+		err.WithField("birthdate", "birthdate can't be set in the future")
+	}
+
+	if err.HasFields() {
+		return Birthdate{}, err
 	}
 
 	return Birthdate{val: t}, nil

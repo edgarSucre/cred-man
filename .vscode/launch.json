@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/cmd/api/main.go",
-            "envFile": ".env",
+            "envFile": "${workspaceFolder}/.env",
             "env": {
                 "ENVIRONMENT": "develop"
             }

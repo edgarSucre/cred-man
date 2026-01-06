@@ -1,5 +1,7 @@
 package bank
 
+import "github.com/edgarSucre/mye"
+
 type Bank struct {
 	id       ID
 	name     string
@@ -8,12 +10,20 @@ type Bank struct {
 
 func New(n string, t Type) (Bank, error) {
 	var newBank Bank
+
+	err := mye.New(mye.CodeInvalid, "bank_creation_failed", "validation failed").
+		WithUserMsg("bank creation failed due to invalid input")
+
 	if len(n) == 0 {
-		return newBank, ErrInvalidBankName
+		err.WithField("name", "name can't be empty")
 	}
 
 	if !t.IsValid() {
-		return newBank, ErrBankTypeInvalid
+		err.WithField("type", "bank type must be 'private' or 'government'")
+	}
+
+	if err.HasFields() {
+		return Bank{}, err
 	}
 
 	newBank.name = n

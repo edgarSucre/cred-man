@@ -2,6 +2,8 @@ package client
 
 import (
 	"time"
+
+	"github.com/edgarSucre/mye"
 )
 
 type Client struct {
@@ -14,18 +16,23 @@ type Client struct {
 }
 
 func New(b Birthdate, country *string, email Email, fullName string) (Client, error) {
-	var cl Client
+	err := mye.New(mye.CodeInvalid, "client_creation_failed", "validation failed").
+		WithUserMsg("client creation validation failed")
 
 	if !b.IsValid() {
-		return cl, ErrInvalidBirthdate
+		err.WithField("birthdate", "birthdate must be a valid date")
 	}
 
 	if email.IsValid() {
-		return cl, ErrInvalidEmail
+		err.WithField("email", "client email should be a valid email address")
 	}
 
 	if len(fullName) == 0 {
-		return cl, ErrInvalidClientFullName
+		err.WithField("email", "client full name can't be empty")
+	}
+
+	if err.HasFields() {
+		return Client{}, err
 	}
 
 	return Client{

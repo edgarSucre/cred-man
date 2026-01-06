@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/edgarSucre/crm/internal/application/clients"
-	"github.com/edgarSucre/crm/internal/infrastructure/thttp/httputils"
+	"github.com/edgarSucre/crm/internal/infrastructure/http/httputils"
+	"github.com/edgarSucre/mye"
 )
 
 type ClientHandler struct {
@@ -17,8 +18,26 @@ type ClientHandler struct {
 func NewClientHandler(
 	createClient clients.CreateClientService,
 	getClient clients.GetClientService,
-) ClientHandler {
-	return ClientHandler{createClient, getClient}
+) (ClientHandler, error) {
+	err := mye.New(
+		mye.CodeInternal,
+		"client_handler_config_error",
+		"client handler validation error",
+	)
+
+	if createClient == nil {
+		err.WithField("createClient", "createClient service is missing")
+	}
+
+	if getClient == nil {
+		err.WithField("getClient", "getClient service is missing")
+	}
+
+	if err.HasFields() {
+		return ClientHandler{}, err
+	}
+
+	return ClientHandler{createClient, getClient}, nil
 }
 
 /* ============================================================================================== */
@@ -44,12 +63,12 @@ func HandleCreateClient(svc clients.CreateClientService) http.Handler {
 		w.WriteHeader(http.StatusCreated)
 
 		return httputils.Marshal(w, resp)
-
 	}
 
 	return httputils.ErrorHandlerFunc(fn)
 }
 
+//easyjson:json
 type CreateClientRequest struct {
 	BirthDate *httputils.Date `json:"birthdate"`
 	Country   *string         `json:"country"`
@@ -76,6 +95,7 @@ func (req CreateClientRequest) ToCommand() clients.CreateClientCommand {
 	}
 }
 
+//easyjson:json
 type ClientResponse struct {
 	BirthDate string `json:"birthdate"`
 	Country   string `json:"country"`
@@ -115,4 +135,4 @@ func HandleGetCLient(svc clients.GetClientService) http.Handler {
 	return httputils.ErrorHandlerFunc(fn)
 }
 
-//go:generate easyjson -all -snake_case $GOFILE
+//go:generate easyjson -snake_case $GOFILE

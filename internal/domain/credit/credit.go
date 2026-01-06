@@ -1,11 +1,11 @@
 package credit
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/edgarSucre/crm/internal/domain/bank"
 	"github.com/edgarSucre/crm/internal/domain/client"
+	"github.com/edgarSucre/mye"
 	"github.com/shopspring/decimal"
 )
 
@@ -28,16 +28,22 @@ type NewCreditOpts struct {
 }
 
 func (opts NewCreditOpts) validate() error {
+	err := mye.New(mye.CodeInvalid, "credit_creation_failed", "validation failed")
+
 	if opts.BankID.IsEmpty() {
-		return fmt.Errorf("NewCreditOpts.validate > %w", bank.ErrInvalidBankID)
+		err.WithField("bank_id", "bank_id can't be empty")
 	}
 
 	if opts.ClientID.IsEmpty() {
-		return fmt.Errorf("NewCreditOpts.validate > %w", client.ErrInvalidClientID)
+		err.WithField("client_id", "client_id can't be empty")
 	}
 
 	if opts.CreditType.IsInvalid() {
-		return fmt.Errorf("NewCreditOpts.validate > %w", ErrInvalidCreditType)
+		err.WithField("credit_type", "credit_type most be 'auto', 'mortgage' or 'commercial'")
+	}
+
+	if err.HasFields() {
+		return err
 	}
 
 	return nil
@@ -45,7 +51,7 @@ func (opts NewCreditOpts) validate() error {
 
 func New(opts NewCreditOpts) (Credit, error) {
 	if err := opts.validate(); err != nil {
-		return Credit{}, fmt.Errorf("credit.New > %w", err)
+		return Credit{}, err
 	}
 
 	return Credit{

@@ -3,6 +3,8 @@ package httputils
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/edgarSucre/mye"
 )
 
 type Date struct {
@@ -15,7 +17,12 @@ func (d *Date) UnmarshalJSON(b []byte) error {
 
 	t, err := time.Parse(time.DateOnly, s)
 	if err != nil {
-		return err
+		return mye.Wrap(
+			err,
+			mye.CodeInvalid,
+			"date_unmarshal_failure",
+			"failed to unmarshal date",
+		).WithUserMsg("date incorrect format, use yyyy-mm-dd")
 	}
 
 	d.Value = t
@@ -23,6 +30,7 @@ func (d *Date) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// just to comply with easyJson interface
 func (d *Date) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.Value.Format(time.DateOnly))
 }

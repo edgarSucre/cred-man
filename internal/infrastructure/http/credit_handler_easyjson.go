@@ -4,7 +4,6 @@ package http
 
 import (
 	json "encoding/json"
-
 	easyjson "github.com/mailru/easyjson"
 	jlexer "github.com/mailru/easyjson/jlexer"
 	jwriter "github.com/mailru/easyjson/jwriter"
@@ -18,7 +17,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp(in *jlexer.Lexer, out *CreditResponse) {
+func easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureHttp(in *jlexer.Lexer, out *CreditResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -96,7 +95,7 @@ func easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp(in 
 		in.Consumed()
 	}
 }
-func easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp(out *jwriter.Writer, in CreditResponse) {
+func easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureHttp(out *jwriter.Writer, in CreditResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -151,81 +150,27 @@ func easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp(out
 // MarshalJSON supports json.Marshaler interface
 func (v CreditResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp(&w, v)
+	easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureHttp(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v CreditResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp(w, v)
+	easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureHttp(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CreditResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp(&r, v)
+	easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureHttp(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CreditResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp(l, v)
+	easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureHttp(l, v)
 }
-func easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(in *jlexer.Lexer, out *CreditHandler) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		if isTopLevel {
-			in.Consumed()
-		}
-		in.Skip()
-		return
-	}
-	in.Delim('{')
-	for !in.IsDelim('}') {
-		key := in.UnsafeFieldName(false)
-		in.WantColon()
-		switch key {
-		default:
-			in.SkipRecursive()
-		}
-		in.WantComma()
-	}
-	in.Delim('}')
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(out *jwriter.Writer, in CreditHandler) {
-	out.RawByte('{')
-	first := true
-	_ = first
-	out.RawByte('}')
-}
-
-// MarshalJSON supports json.Marshaler interface
-func (v CreditHandler) MarshalJSON() ([]byte, error) {
-	w := jwriter.Writer{}
-	easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(&w, v)
-	return w.Buffer.BuildBytes(), w.Error
-}
-
-// MarshalEasyJSON supports easyjson.Marshaler interface
-func (v CreditHandler) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(w, v)
-}
-
-// UnmarshalJSON supports json.Unmarshaler interface
-func (v *CreditHandler) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
-	easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(&r, v)
-	return r.Error()
-}
-
-// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *CreditHandler) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(l, v)
-}
-func easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(in *jlexer.Lexer, out *CreateCreditRequest) {
+func easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureHttp1(in *jlexer.Lexer, out *CreateCreditRequest) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -267,7 +212,7 @@ func easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(in
 		in.Consumed()
 	}
 }
-func easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(out *jwriter.Writer, in CreateCreditRequest) {
+func easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureHttp1(out *jwriter.Writer, in CreateCreditRequest) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -292,23 +237,23 @@ func easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(ou
 // MarshalJSON supports json.Marshaler interface
 func (v CreateCreditRequest) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(&w, v)
+	easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureHttp1(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v CreateCreditRequest) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(w, v)
+	easyjson2868b426EncodeGithubComEdgarSucreCrmInternalInfrastructureHttp1(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CreateCreditRequest) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(&r, v)
+	easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureHttp1(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CreateCreditRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(l, v)
+	easyjson2868b426DecodeGithubComEdgarSucreCrmInternalInfrastructureHttp1(l, v)
 }

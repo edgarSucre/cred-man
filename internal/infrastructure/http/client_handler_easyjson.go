@@ -4,8 +4,7 @@ package http
 
 import (
 	json "encoding/json"
-
-	httputils "github.com/edgarSucre/crm/internal/infrastructure/thttp/httputils"
+	httputils "github.com/edgarSucre/crm/internal/infrastructure/http/httputils"
 	easyjson "github.com/mailru/easyjson"
 	jlexer "github.com/mailru/easyjson/jlexer"
 	jwriter "github.com/mailru/easyjson/jwriter"
@@ -19,7 +18,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp(in *jlexer.Lexer, out *CreateClientRequest) {
+func easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureHttp(in *jlexer.Lexer, out *CreateClientRequest) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -91,7 +90,7 @@ func easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp(in 
 		in.Consumed()
 	}
 }
-func easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp(out *jwriter.Writer, in CreateClientRequest) {
+func easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureHttp(out *jwriter.Writer, in CreateClientRequest) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -134,27 +133,27 @@ func easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp(out
 // MarshalJSON supports json.Marshaler interface
 func (v CreateClientRequest) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp(&w, v)
+	easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureHttp(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v CreateClientRequest) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp(w, v)
+	easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureHttp(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CreateClientRequest) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp(&r, v)
+	easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureHttp(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CreateClientRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp(l, v)
+	easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureHttp(l, v)
 }
-func easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(in *jlexer.Lexer, out *ClientResponse) {
+func easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureHttp1(in *jlexer.Lexer, out *ClientResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -214,7 +213,7 @@ func easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(in
 		in.Consumed()
 	}
 }
-func easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(out *jwriter.Writer, in ClientResponse) {
+func easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureHttp1(out *jwriter.Writer, in ClientResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -254,77 +253,23 @@ func easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(ou
 // MarshalJSON supports json.Marshaler interface
 func (v ClientResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(&w, v)
+	easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureHttp1(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v ClientResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(w, v)
+	easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureHttp1(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ClientResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(&r, v)
+	easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureHttp1(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *ClientResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp1(l, v)
-}
-func easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(in *jlexer.Lexer, out *ClientHandler) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		if isTopLevel {
-			in.Consumed()
-		}
-		in.Skip()
-		return
-	}
-	in.Delim('{')
-	for !in.IsDelim('}') {
-		key := in.UnsafeFieldName(false)
-		in.WantColon()
-		switch key {
-		default:
-			in.SkipRecursive()
-		}
-		in.WantComma()
-	}
-	in.Delim('}')
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(out *jwriter.Writer, in ClientHandler) {
-	out.RawByte('{')
-	first := true
-	_ = first
-	out.RawByte('}')
-}
-
-// MarshalJSON supports json.Marshaler interface
-func (v ClientHandler) MarshalJSON() ([]byte, error) {
-	w := jwriter.Writer{}
-	easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(&w, v)
-	return w.Buffer.BuildBytes(), w.Error
-}
-
-// MarshalEasyJSON supports easyjson.Marshaler interface
-func (v ClientHandler) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonCe40ee54EncodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(w, v)
-}
-
-// UnmarshalJSON supports json.Unmarshaler interface
-func (v *ClientHandler) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
-	easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(&r, v)
-	return r.Error()
-}
-
-// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *ClientHandler) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureThttp2(l, v)
+	easyjsonCe40ee54DecodeGithubComEdgarSucreCrmInternalInfrastructureHttp1(l, v)
 }

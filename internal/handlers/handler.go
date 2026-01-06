@@ -3,10 +3,7 @@ package handlers
 import (
 	"github.com/edgarSucre/crm/internal/application/credits"
 	"github.com/edgarSucre/crm/internal/infrastructure/events"
-	"github.com/edgarSucre/crm/pkg/terror"
 )
-
-var ErrNoCreditService = terror.Internal.New("event-handler-bad-config", "credit service is missing")
 
 func GetCreditHandlers(
 	approveCredit credits.ApproveCreditService,

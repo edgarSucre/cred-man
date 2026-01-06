@@ -4,25 +4,27 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/edgarSucre/crm/internal/infrastructure/config"
-	"github.com/edgarSucre/crm/internal/infrastructure/thttp/httputils"
-	"github.com/edgarSucre/crm/pkg/terror"
+	"github.com/edgarSucre/crm/internal/infrastructure/http/httputils"
+	"github.com/edgarSucre/mye"
 )
 
 type ServerParams struct {
-	bankHandler   BankHandler
-	clientHandler ClientHandler
-	creditHandler CreditHandler
+	bankHandler   *BankHandler
+	clientHandler *ClientHandler
+	creditHandler *CreditHandler
 	Logger        *slog.Logger
 }
 
 func NewServer(
-	cfg config.Config,
-	bankHandler BankHandler,
-	clientHandler ClientHandler,
-	creditHandler CreditHandler,
+	bankHandler *BankHandler,
+	clientHandler *ClientHandler,
+	creditHandler *CreditHandler,
 	logger *slog.Logger,
-) http.Handler {
+) (http.Handler, error) {
+	if err := validateServer(bankHandler, clientHandler, creditHandler, logger); err != nil {
+		return nil, err
+	}
+
 	mux := http.NewServeMux()
 
 	addRoutes(
@@ -36,12 +38,40 @@ func NewServer(
 
 	handler = httputils.RequestLogger(handler, logger)
 
-	return handler
+	return handler, nil
 }
 
-var (
-	ErrNoBankHandler   = terror.Internal.New("http-bad-config", "bank handler is missing")
-	ErrNoClientHandler = terror.Internal.New("http-bad-config", "client handler is missing")
-	ErrNoCreditHandler = terror.Internal.New("http_bad_config", "credit handler is missing")
-	ErrNoLogger        = terror.Internal.New("http-bad-config", "logger is missing")
-)
+func validateServer(
+	bankHandler *BankHandler,
+	clientHandler *ClientHandler,
+	creditHandler *CreditHandler,
+	logger *slog.Logger,
+) error {
+	err := mye.New(
+		mye.CodeInternal,
+		"http_server_config_error",
+		"http server params validation error",
+	)
+
+	if bankHandler == nil {
+		err.WithField("bankHandler", "bank handler is missing")
+	}
+
+	if clientHandler == nil {
+		err.WithField("clientHandler", "client handler is missing")
+	}
+
+	if creditHandler == nil {
+		err.WithField("creditHandler", "credit handler is missing")
+	}
+
+	if logger == nil {
+		err.WithField("logger", "logger is missing")
+	}
+
+	if err.HasFields() {
+		return err
+	}
+
+	return nil
+}

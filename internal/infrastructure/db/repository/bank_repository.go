@@ -2,12 +2,11 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/edgarSucre/crm/internal/domain/bank"
-	"github.com/edgarSucre/crm/pkg/terror"
-	"github.com/jackc/pgx/v5"
+
+	"github.com/edgarSucre/mye"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -19,19 +18,30 @@ func NewBankRepository(pool *pgxpool.Pool) BankRepository {
 	return BankRepository{q: &Queries{db: pool}}
 }
 
-func (repo BankRepository) CreateBank(ctx context.Context, bank bank.Bank) (bank.Bank, error) {
+func (repo BankRepository) CreateBank(ctx context.Context, bankIn bank.Bank) (bank.Bank, error) {
 	model, err := repo.q.CreateBank(ctx, CreateBankParams{
-		Name: bank.Name(),
-		Type: BankType(bank.Type().String()),
+		Name: bankIn.Name(),
+		Type: BankType(bankIn.Type().String()),
 	})
 
 	if err != nil {
-		return bank, err
+		code, slug := CodeAndSlug(err)
+		if code == mye.CodeConflict {
+			return bank.Bank{}, mye.Wrap(err, code, slug, "bank fails to be unique").
+				WithUserMsg("The name of the bank is already taken. Choose a different name and try again.")
+		}
+
+		if code == mye.CodeTimeout {
+			return bank.Bank{}, mye.Wrap(err, code, slug, "insert into table banks timeout").
+				WithUserMsg("The bank creation is taking a bit too log due to high traffic. Please try again in a few seconds.")
+		}
+
+		return bank.Bank{}, mye.Wrap(err, code, slug, "createBank failure")
 	}
 
 	dBank, err := model.ToDomain()
 	if err != nil {
-		return bank, err
+		return bankIn, err
 	}
 
 	return dBank, nil
@@ -40,13 +50,15 @@ func (repo BankRepository) CreateBank(ctx context.Context, bank bank.Bank) (bank
 func (m Bank) ToDomain() (bank.Bank, error) {
 	id, err := bank.NewID(m.ID.String())
 	if err != nil {
-		err = terror.ToInternal(err)
-		return bank.Bank{}, fmt.Errorf("bank.NewID > %w", err)
+		err = mye.Wrap(err, mye.CodeInternal, ErrDataIntegrity, "corrupted bank ID in the database")
+
+		return bank.Bank{}, err
 	}
 
 	t, err := bank.TypeFromString(string(m.Type))
 	if err != nil {
-		err = terror.ToInternal(err)
+		err = mye.Wrap(err, mye.CodeInternal, ErrDataIntegrity, "corrupted bank type in the database")
+
 		return bank.Bank{}, fmt.Errorf("bank.TypeFromString > %w", err)
 	}
 
@@ -54,24 +66,32 @@ func (m Bank) ToDomain() (bank.Bank, error) {
 
 }
 
-var ErrBankNotFound = terror.NotFound.New("bank_not_found", "couldn't find bank")
-
 func (repo BankRepository) GetBank(
 	ctx context.Context,
 	id bank.ID,
 ) (bank.Bank, error) {
 	mBank, err := repo.q.GetBank(ctx, id.UUID())
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return bank.Bank{}, ErrBankNotFound
+		code, slug := CodeAndSlug(err)
+
+		if code == mye.CodeNotFound {
+			return bank.Bank{}, mye.Wrap(err, code, slug, "bank not found").
+				WithAttribute("id", id.String()).
+				WithUserMsg("we couldn't find that bank")
+
 		}
 
-		return bank.Bank{}, fmt.Errorf("sqlc.getBank > %w", err)
+		if code == mye.CodeTimeout {
+			return bank.Bank{}, mye.Wrap(err, code, slug, "get bank query timeout").
+				WithUserMsg("The bank search is taking a bit too log due to high traffic. Please try again in a few seconds.")
+		}
+
+		return bank.Bank{}, mye.Wrap(err, code, slug, "get bank query error")
 	}
 
 	dBank, err := mBank.ToDomain()
 	if err != nil {
-		return bank.Bank{}, fmt.Errorf("sqlc.bank.ToDomain > %w", err)
+		return bank.Bank{}, err
 	}
 
 	return dBank, nil

@@ -5,15 +5,23 @@ import (
 	"net/http"
 
 	"github.com/edgarSucre/crm/internal/application/banks"
-	"github.com/edgarSucre/crm/internal/infrastructure/thttp/httputils"
+	"github.com/edgarSucre/crm/internal/infrastructure/http/httputils"
+	"github.com/edgarSucre/mye"
 )
 
 type BankHandler struct {
 	createBank banks.CreateBankService
 }
 
-func NewBankHandler(createBank banks.CreateBankService) BankHandler {
-	return BankHandler{createBank}
+func NewBankHandler(createBank banks.CreateBankService) (BankHandler, error) {
+	if createBank == nil {
+		return BankHandler{}, mye.New(
+			mye.CodeInternal,
+			"bank_handler_config_error",
+			"bank handler validation error",
+		).WithField("createBank", "createBank service is missing")
+	}
+	return BankHandler{createBank}, nil
 }
 
 func HandleCreateBank(svc banks.CreateBankService) http.Handler {
@@ -40,6 +48,7 @@ func HandleCreateBank(svc banks.CreateBankService) http.Handler {
 	return httputils.ErrorHandlerFunc(fn)
 }
 
+//easyjson:json
 type CreateBankRequest struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
@@ -52,6 +61,7 @@ func (req CreateBankRequest) ToParams() banks.CreateBankCmd {
 	}
 }
 
+//easyjson:json
 type CreateBankResponse struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
@@ -64,4 +74,4 @@ func (resp *CreateBankResponse) FromResult(bankResult banks.CreateBankResult) {
 	resp.Type = bankResult.Type
 }
 
-//go:generate easyjson -all -snake_case $GOFILE
+//go:generate easyjson -snake_case $GOFILE

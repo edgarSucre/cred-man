@@ -1,8 +1,7 @@
 package credit
 
 import (
-	"fmt"
-
+	"github.com/edgarSucre/mye"
 	"github.com/google/uuid"
 )
 
@@ -11,13 +10,16 @@ type ID struct {
 }
 
 func NewIDFromString(s string) (ID, error) {
+	err := mye.New(mye.CodeInvalid, "credit_id_creation_failed", "validation failed").
+		WithUserMsg("credit_id creation validation failed")
+
 	if len(s) == 0 {
-		return ID{}, ErrInvalidCreditID
+		return ID{}, err.WithField("credit_id", "credit_id can't be empty")
 	}
 
-	id, err := uuid.Parse(s)
-	if err != nil {
-		return ID{}, ErrInvalidCreditID
+	id, uuidErr := uuid.Parse(s)
+	if uuidErr != nil {
+		return ID{}, err.WithField("credit_id", "credit_id is not a valid uuid v4")
 	}
 
 	return ID{value: id}, nil
@@ -26,8 +28,11 @@ func NewIDFromString(s string) (ID, error) {
 func NewIDFromUUID(id uuid.UUID) (ID, error) {
 	var emptyID uuid.UUID
 
+	err := mye.New(mye.CodeInvalid, "credit_id_creation_failed", "validation failed").
+		WithUserMsg("credit_id creation validation failed")
+
 	if id == emptyID {
-		return ID{}, fmt.Errorf("credit.NewIDFromUUID > %w", ErrInvalidCreditID)
+		return ID{}, err.WithField("credit_id", "credit_id can't be empty")
 	}
 
 	return ID{value: id}, nil

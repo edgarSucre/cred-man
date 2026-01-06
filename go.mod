@@ -2,7 +2,10 @@ module github.com/edgarSucre/crm
 
 go 1.25.1
 
+replace github.com/edgarSucre/mye => /home/edgar/Documents/code/me/mye
+
 require (
+	github.com/edgarSucre/mye v0.0.0-20260101192843-612e0c14afc7
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/mailru/easyjson v0.9.1

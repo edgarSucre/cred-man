@@ -4,31 +4,23 @@ import (
 	"context"
 
 	"github.com/edgarSucre/crm/internal/domain/client"
+	"github.com/edgarSucre/mye"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ClientRepository struct {
-	pool *pgxpool.Pool
+	q Querier
 }
 
 func NewClientRepository(pool *pgxpool.Pool) *ClientRepository {
-	return &ClientRepository{pool}
+	return &ClientRepository{New(pool)}
 }
 
 func (repo *ClientRepository) CreateClient(
 	ctx context.Context,
 	cl client.Client,
 ) (client.Client, error) {
-	conn, err := repo.pool.Acquire(ctx)
-	if err != nil {
-		return cl, err
-	}
-
-	defer conn.Conn().Close(ctx)
-
-	q := &Queries{db: conn}
-
-	model, err := q.CreateClient(ctx, CreateClientParams{
+	model, err := repo.q.CreateClient(ctx, CreateClientParams{
 		FullName:  cl.FullName(),
 		Email:     cl.Email().String(),
 		Birthdate: cl.Birthdate().Time(),
@@ -36,7 +28,19 @@ func (repo *ClientRepository) CreateClient(
 	})
 
 	if err != nil {
-		return cl, err
+		code, slug := CodeAndSlug(err)
+
+		if code == mye.CodeConflict {
+			return client.Client{}, mye.Wrap(err, code, slug, "client name is not unique").
+				WithUserMsg("The name of the client is already taken. Choose a different name and try again")
+		}
+
+		if code == mye.CodeTimeout {
+			return client.Client{}, mye.Wrap(err, code, slug, "createClient time out").
+				WithUserMsg("The client creation is taking a bit too log due to high traffic. Please try again in a few seconds.")
+		}
+
+		return client.Client{}, mye.Wrap(err, code, slug, "create client failure")
 	}
 
 	dClient, err := model.ToDomain()
@@ -48,18 +52,22 @@ func (repo *ClientRepository) CreateClient(
 }
 
 func (repo *ClientRepository) GetClient(ctx context.Context, id client.ID) (client.Client, error) {
-	conn, err := repo.pool.Acquire(ctx)
+	mClient, err := repo.q.GetClient(ctx, id.UUID())
 	if err != nil {
-		return client.Client{}, err
-	}
+		code, slug := CodeAndSlug(err)
 
-	defer conn.Conn().Close(ctx)
+		if code == mye.CodeNotFound {
+			return client.Client{}, mye.Wrap(err, code, slug, "client not found").
+				WithAttribute("id", id.String()).
+				WithUserMsg("we couldn't find that client")
+		}
 
-	q := &Queries{db: conn}
+		if code == mye.CodeTimeout {
+			return client.Client{}, mye.Wrap(err, code, slug, "getClient time out").
+				WithUserMsg("The client search is taking a bit too long due to high traffic. Please try again in a few seconds")
+		}
 
-	mClient, err := q.GetClient(ctx, id.UUID())
-	if err != nil {
-		return client.Client{}, err
+		return client.Client{}, mye.Wrap(err, code, slug, "failed to retrieve client")
 	}
 
 	dClient, err := mClient.ToDomain()
@@ -73,17 +81,17 @@ func (repo *ClientRepository) GetClient(ctx context.Context, id client.ID) (clie
 func (m Client) ToDomain() (client.Client, error) {
 	birthdate, err := client.NewBirthdate(m.Birthdate)
 	if err != nil {
-		return client.Client{}, err
+		return client.Client{}, mye.Wrap(err, mye.CodeInternal, ErrDataIntegrity, "corrupted birthdate in the database")
 	}
 
 	email, err := client.NewEmail(m.Email)
 	if err != nil {
-		return client.Client{}, err
+		return client.Client{}, mye.Wrap(err, mye.CodeInternal, ErrDataIntegrity, "corrupted email in the database")
 	}
 
 	id, err := client.NewID(m.ID.String())
 	if err != nil {
-		return client.Client{}, err
+		return client.Client{}, mye.Wrap(err, mye.CodeInternal, ErrDataIntegrity, "corrupted ID in the database")
 	}
 
 	return client.Rehydrate(
