@@ -8,13 +8,6 @@ import (
 	"github.com/edgarSucre/mye"
 )
 
-type ServerParams struct {
-	bankHandler   *BankHandler
-	clientHandler *ClientHandler
-	creditHandler *CreditHandler
-	Logger        *slog.Logger
-}
-
 func NewServer(
 	bankHandler *BankHandler,
 	clientHandler *ClientHandler,
@@ -41,6 +34,7 @@ func NewServer(
 	return handler, nil
 }
 
+//nolint:errcheck
 func validateServer(
 	bankHandler *BankHandler,
 	clientHandler *ClientHandler,

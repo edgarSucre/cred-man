@@ -7,8 +7,12 @@ import (
 	"github.com/mailru/easyjson"
 )
 
-func Unmarshal(r io.ReadCloser, v easyjson.Unmarshaler) error {
-	defer r.Close()
+func Unmarshal(r io.ReadCloser, v easyjson.Unmarshaler) (err error) {
+	defer func() {
+		if cErr := r.Close(); cErr != nil && err == nil {
+			err = cErr
+		}
+	}()
 
 	raw, err := io.ReadAll(r)
 	if err != nil {

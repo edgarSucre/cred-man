@@ -15,6 +15,7 @@ type Client struct {
 	createdAt time.Time
 }
 
+//nolint:errcheck
 func New(b Birthdate, country *string, email Email, fullName string) (Client, error) {
 	err := mye.New(mye.CodeInvalid, "client_creation_failed", "validation failed").
 		WithUserMsg("client creation validation failed")

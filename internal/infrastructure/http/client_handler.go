@@ -15,6 +15,7 @@ type ClientHandler struct {
 	getClient    clients.GetClientService
 }
 
+//nolint:errcheck
 func NewClientHandler(
 	createClient clients.CreateClientService,
 	getClient clients.GetClientService,

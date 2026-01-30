@@ -160,7 +160,6 @@ func (svc createCredit) getBankAndClient(
 		}
 
 		clientCh <- c
-		return
 	}()
 
 	go func() {
@@ -173,7 +172,6 @@ func (svc createCredit) getBankAndClient(
 		}
 
 		bankCh <- b
-		return
 	}()
 
 	wg.Wait()
@@ -219,8 +217,7 @@ type CreditResult struct {
 	TermMonths int
 }
 
-const createErrSlug = "createCredit_service_config_error"
-
+//nolint:errcheck
 func validateCreateService(
 	bankRepo bankRepository,
 	clientRepo clientRepository,

@@ -64,6 +64,7 @@ type CreateClientCommand struct {
 	FullName  string
 }
 
+//nolint:errcheck
 func (cmd CreateClientCommand) Validate() error {
 	err := mye.New(mye.CodeInvalid, "client_creation_failed", "validation failed").
 		WithUserMsg("client creation failed due to validation")

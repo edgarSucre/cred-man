@@ -14,6 +14,7 @@ type CreditHandler struct {
 	getCredit    credits.GetCreditService
 }
 
+//nolint:errcheck
 func NewCreditHandler(
 	createCredit credits.CreateCreditService,
 	getCredit credits.GetCreditService,

@@ -55,6 +55,7 @@ type CreateBankCmd struct {
 	Type string
 }
 
+//nolint:errcheck
 func (cmd CreateBankCmd) Validate() error {
 	err := mye.New(mye.CodeInvalid, "bank_creation_failed", "validation failed").
 		WithUserMsg("bank validation failed")

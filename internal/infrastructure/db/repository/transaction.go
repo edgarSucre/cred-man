@@ -20,13 +20,17 @@ type txKey struct{}
 func (tm transactionManager) WithTransaction(
 	ctx context.Context,
 	fn func(ctx context.Context) error,
-) error {
+) (err error) {
 	tx, err := tm.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
 	}
 
-	defer tx.Rollback(ctx)
+	defer func() {
+		if cErr := tx.Rollback(ctx); cErr != nil && err == nil {
+			err = cErr
+		}
+	}()
 
 	ctx = context.WithValue(ctx, txKey{}, tx)
 

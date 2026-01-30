@@ -27,6 +27,7 @@ type NewCreditOpts struct {
 	CreditType CreditType
 }
 
+//nolint:errcheck
 func (opts NewCreditOpts) validate() error {
 	err := mye.New(mye.CodeInvalid, "credit_creation_failed", "validation failed")
 
@@ -160,7 +161,7 @@ func (credit Credit) TermMonths() int {
 	return credit.termMonths
 }
 
-func (credit Credit) Approve() {
+func (credit *Credit) Approve() {
 	credit.status = CreditStatusApproved
 }
 

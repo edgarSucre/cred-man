@@ -10,6 +10,7 @@ type Email struct {
 	val string
 }
 
+//nolint:errcheck
 func NewEmail(e string) (Email, error) {
 	err := mye.New(mye.CodeInvalid, "email_creation_failed", "validation failed").
 		WithUserMsg("email validation failed")

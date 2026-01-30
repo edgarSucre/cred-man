@@ -88,7 +88,12 @@ func (c *StreamConsumer) Start(ctx context.Context) error {
 				select {
 				case c.jobs <- msg:
 				case <-ctx.Done():
-					break
+					// stop accepting new work
+					close(c.jobs)
+
+					// wait for workers to finish
+					wg.Wait()
+					return nil
 				}
 			}
 		}

@@ -5,6 +5,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+//nolint:errcheck
 func NewStreamBus(redisClient *redis.Client, stream string) (*RedisStreamBus, error) {
 	err := mye.New(
 		mye.CodeInternal,
@@ -35,6 +36,7 @@ type ConsumerParams struct {
 	Stream   string
 }
 
+//nolint:errcheck
 func (params ConsumerParams) Validate() error {
 	err := mye.New(mye.CodeInternal, "redis_consumer_creation_failed", "parameter validation error")
 

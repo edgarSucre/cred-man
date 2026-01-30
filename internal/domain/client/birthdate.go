@@ -10,6 +10,7 @@ type Birthdate struct {
 	val *time.Time
 }
 
+//nolint:errcheck
 func NewBirthdate(t *time.Time) (Birthdate, error) {
 	if t == nil {
 		return Birthdate{}, nil

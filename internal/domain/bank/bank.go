@@ -8,6 +8,7 @@ type Bank struct {
 	bankType Type
 }
 
+//nolint:errcheck
 func New(n string, t Type) (Bank, error) {
 	var newBank Bank
 

@@ -57,15 +57,13 @@ func (svc processCredit) Execute(
 		return fmt.Errorf("creditRepo.ProcessCredit > %w", err)
 	}
 
-	svc.transactionManager.WithTransaction(ctx, func(txCtx context.Context) error {
+	return svc.transactionManager.WithTransaction(ctx, func(txCtx context.Context) error {
 		if err := svc.processCreditAndPublishEvent(txCtx, *creditAggregate); err != nil {
 			return fmt.Errorf("processCreditAndPublishEvent > %w", err)
 		}
 
 		return nil
 	})
-
-	return nil
 }
 
 type ProcessCreditCommand struct {
@@ -73,6 +71,7 @@ type ProcessCreditCommand struct {
 	CreditID string
 }
 
+//nolint:errcheck
 func (cmd ProcessCreditCommand) validate() error {
 	err := mye.New(mye.CodeInvalid, "credit process failed", "validation error")
 
@@ -120,6 +119,7 @@ func (svc processCredit) processCreditAndPublishEvent(
 	return nil
 }
 
+//nolint:errcheck
 func validateProcessService(
 	bus eventBus,
 	creditRepo creditRepository,

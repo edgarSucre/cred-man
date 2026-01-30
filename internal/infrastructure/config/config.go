@@ -14,6 +14,7 @@ type Config struct {
 	Consumer  string
 }
 
+//nolint:errcheck
 func LoadConfig(env map[string]string) (Config, error) {
 	err := mye.New(mye.CodeInternal, "system_configuration_failed", "missing environment variables")
 	for key := range env {
